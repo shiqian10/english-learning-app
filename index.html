@@ -1802,17 +1802,24 @@
     let aiApiKey = '';
     let aiProvider = 'siliconflow'; // siliconflow 或 gemini
     
-    // 页面加载时检查API Key
-    (function() {
+    // 页面加载时检查API Key（延迟确保DOM已就绪）
+    document.addEventListener('DOMContentLoaded', () => {
       aiApiKey = localStorage.getItem('ai_api_key') || '';
       aiProvider = localStorage.getItem('ai_provider') || 'siliconflow';
       if (aiApiKey) {
         const setup = document.getElementById('chatApiSetup');
         const active = document.getElementById('chatApiActive');
+        const statusEl = document.getElementById('apiStatusText');
         if (setup) setup.style.display = 'none';
         if (active) active.style.display = 'block';
+        // 更新状态文字
+        const providerName = aiProvider === 'siliconflow' ? '硅基流动' : 'Gemini';
+        if (statusEl) statusEl.innerHTML = `✅ ${providerName} AI已启用 · <button onclick="clearApiKey()" class="api-clear-btn">切换回离线模式</button>`;
+        // 更新radio选择
+        const radios = document.querySelectorAll('input[name="aiProvider"]');
+        radios.forEach(r => r.checked = r.value === aiProvider);
       }
-    })();
+    });
     
     function updateProviderHint() {
       const provider = document.querySelector('input[name="aiProvider"]:checked')?.value || 'siliconflow';
@@ -2289,14 +2296,22 @@
     // 注册PWA service worker（简化版，仅缓存本页）
     if ('serviceWorker' in navigator) {
       const swCode = `
-        const CACHE = 'eng-learn-v1';
+        const CACHE = 'eng-learn-v8';
         self.addEventListener('install', e => {
-          e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/index.html', '/data.js', '/manifest.json'])));
+          e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/english-learning-app/index.html', '/english-learning-app/data.js', '/english-learning-app/manifest.json'])));
           self.skipWaiting();
         });
-        self.addEventListener('activate', e => { e.waitUntil(clients.claim()); });
+        self.addEventListener('activate', e => {
+          // 清除旧版缓存
+          e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => clients.claim()));
+        });
         self.addEventListener('fetch', e => {
-          e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+          // 网络优先，缓存兜底（确保用户总是拿到最新版本）
+          e.respondWith(fetch(e.request).then(r => {
+            const clone = r.clone();
+            caches.open(CACHE).then(c => c.put(e.request, clone));
+            return r;
+          }).catch(() => caches.match(e.request)));
         });
       `;
       const blob = new Blob([swCode], {type: 'application/javascript'});
