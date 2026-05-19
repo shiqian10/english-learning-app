@@ -1614,24 +1614,49 @@
     // ========== 问姑姑聊天功能 ==========
     let chatHistory = [];
     
+    // 常用中文→英语翻译词典
+    const CN_EN_DICT = {
+      '你好': 'Hello / Hi', '谢谢': 'Thank you / Thanks', '对不起': 'Sorry / I\'m sorry',
+      '再见': 'Goodbye / Bye', '请': 'Please', '是': 'Yes', '不': 'No',
+      '我爱你': 'I love you', '早上好': 'Good morning', '晚安': 'Good night',
+      '吃': 'eat', '喝': 'drink', '玩': 'play', '看': 'look / watch',
+      '跑': 'run', '走': 'walk', '坐': 'sit', '站': 'stand',
+      '大': 'big', '小': 'small', '多': 'many / much', '少': 'few / little',
+      '好': 'good', '坏': 'bad', '快': 'fast', '慢': 'slow',
+      '冷': 'cold', '热': 'hot', '新': 'new', '旧': 'old',
+      '长': 'long', '短': 'short', '高': 'tall', '低': 'low',
+      '开心': 'happy', '伤心': 'sad', '害怕': 'scared', '生气': 'angry',
+      '漂亮': 'beautiful', '聪明': 'smart', '强壮': 'strong',
+      '猫': 'cat', '狗': 'dog', '鸟': 'bird', '鱼': 'fish',
+      '兔子': 'rabbit', '猪': 'pig', '牛': 'cow', '马': 'horse',
+      '妈妈': 'mom / mother', '爸爸': 'dad / father', '兄弟': 'brother', '姐妹': 'sister',
+      '家庭': 'family', '朋友': 'friend', '老师': 'teacher', '宝宝': 'baby',
+      '苹果': 'apple', '香蕉': 'banana', '牛奶': 'milk', '蛋糕': 'cake',
+      '鸡蛋': 'egg', '面包': 'bread', '米饭': 'rice', '水': 'water',
+      '红色': 'red', '蓝色': 'blue', '绿色': 'green', '黄色': 'yellow',
+      '白色': 'white', '黑色': 'black',
+      '一': 'one', '二': 'two', '三': 'three', '四': 'four', '五': 'five',
+      '六': 'six', '七': 'seven', '八': 'eight', '九': 'nine', '十': 'ten',
+      '太阳': 'sun', '月亮': 'moon', '星星': 'star', '树': 'tree', '花': 'flower',
+      '书': 'book', '笔': 'pen', '书包': 'bag', '学校': 'school',
+      '汽车': 'car', '飞机': 'plane', '火车': 'train', '船': 'boat',
+    };
+    
     function sendMessage() {
       const input = document.getElementById('chatInput');
       const question = input.value.trim();
       if (!question) return;
       
-      // 添加用户消息
       addChatMessage('user', question);
       input.value = '';
       
-      // 显示输入中...
       const typingId = addTypingIndicator();
       
-      // 模拟AI回答（这里用简单规则，实际可以接入真正的AI API）
       setTimeout(() => {
         removeTypingIndicator(typingId);
         const answer = getAIAnswer(question);
         addChatMessage('assistant', answer);
-      }, 1000 + Math.random() * 1000);
+      }, 600 + Math.random() * 800);
     }
     
     function sendQuickQuestion(question) {
@@ -1648,9 +1673,11 @@
       msgDiv.className = `chat-message ${role}`;
       
       const avatar = role === 'user' ? '👧' : '👩‍🏫';
+      // 支持换行
+      const formatted = content.replace(/\n/g, '<br>');
       msgDiv.innerHTML = `
         <div class="chat-avatar">${avatar}</div>
-        <div class="chat-bubble">${content}</div>
+        <div class="chat-bubble">${formatted}</div>
       `;
       
       container.appendChild(msgDiv);
@@ -1683,69 +1710,160 @@
     }
     
     function getAIAnswer(question) {
-      const q = question.toLowerCase();
+      const q = question.toLowerCase().trim();
       
-      // 简单规则匹配（可以替换为真正的AI API）
-      if (q.includes('怎么读') || q.includes('发音')) {
+      // 1. 直接输入英文单词 → 返回完整信息
+      const enWords = q.match(/\b[a-zA-Z]+(?:\s[a-zA-Z]+)?\b/g);
+      if (enWords && enWords.length === 1 && q.length <= 30) {
+        const wordData = findWordInData(enWords[0]);
+        if (wordData) {
+          const dayInfo = findDayForWord(wordData.en);
+          return `${wordData.emoji} <strong>${wordData.en}</strong>\n音标：${wordData.ph}\n中文：${wordData.cn}\n第${dayInfo}天学习内容\n点击🔊可以听发音！`;
+        }
+        // 不在词库中的英文单词
+        return `我还没学到 "${enWords[0]}" 这个词呢！\n不过你可以点击🔊按钮听发音。\n我们词库有270个常用词，也许后面会学到它！`;
+      }
+      
+      // 2. 直接输入中文 → 翻译成英文
+      const cnKey = question.replace(/[？?！!。.，,吗呢吧啊呀]/g, '').trim();
+      if (CN_EN_DICT[cnKey]) {
+        const en = CN_EN_DICT[cnKey];
+        const wordData = findWordInData(cnKey);
+        if (wordData) {
+          return `${wordData.emoji} "${cnKey}" 用英语说是 <strong>${wordData.en}</strong>\n音标：${wordData.ph}\n记得多听多读哦！`;
+        }
+        return `"${cnKey}" 用英语说是 <strong>${en}</strong>\n多多练习，慢慢就会记住啦！`;
+      }
+      
+      // 3. 怎么读/发音
+      if (q.includes('怎么读') || q.includes('发音') || q.includes('读音') || q.includes('念')) {
         const word = extractWord(question);
         if (word) {
           const wordData = findWordInData(word);
           if (wordData) {
-            return `"${wordData.en}" 的发音是 ${wordData.ph}，意思是"${wordData.cn}"。点击学单词页面的🔊按钮可以听发音哦！`;
+            return `${wordData.emoji} <strong>${wordData.en}</strong> 的发音是 ${wordData.ph}\n中文意思是"${wordData.cn}"\n点击学单词页面的🔊按钮可以听发音！`;
           }
+          return `我暂时没有 "${word}" 的信息。\n你可以点击🔊按钮听系统发音哦～`;
         }
-        return '你想知道哪个单词的发音呢？告诉我单词，我帮你查～';
+        return '告诉我你想知道哪个单词的发音？\n比如输入 "mom怎么读" 或者直接输入单词～';
       }
       
-      if (q.includes('什么意思') || q.includes('意思')) {
+      // 4. 什么意思/意思
+      if (q.includes('什么意思') || q.includes('啥意思') || q.includes('意思是') || q.includes('含义')) {
         const word = extractWord(question);
         if (word) {
           const wordData = findWordInData(word);
           if (wordData) {
-            return `${wordData.emoji} "${wordData.en}" 的意思是"${wordData.cn}"！\n\n音标是：${wordData.ph}`;
+            return `${wordData.emoji} <strong>${wordData.en}</strong> 的意思是"${wordData.cn}"\n音标：${wordData.ph}\n多读绘本，你会更熟悉它！`;
+          }
+          return `我还没学到 "${word}" 这个词。\n我们的词库有270个常用词，继续学习吧！`;
+        }
+        return '告诉我你想知道哪个单词的意思？\n比如 "apple是什么意思"～';
+      }
+      
+      // 5. 怎么说/英语怎么/翻译
+      if (q.includes('怎么说') || q.includes('英语怎么') || q.includes('英语是') || q.includes('翻译') || q.includes('用英语')) {
+        // 先检查词典
+        for (const [cn, en] of Object.entries(CN_EN_DICT)) {
+          if (question.includes(cn)) {
+            const wordData = findWordInData(cn);
+            if (wordData) {
+              return `${wordData.emoji} "${cn}" 用英语说是 <strong>${wordData.en}</strong>\n音标：${wordData.ph}\n记得多练习哦！`;
+            }
+            return `"${cn}" 用英语说是 <strong>${en}</strong>\n多多练习，慢慢就会记住啦！💪`;
           }
         }
-        return '你想知道哪个单词的意思呢？';
+        // 检查词库中的中文
+        const allWords = WORDS_DATA.flatMap(d => d.words);
+        for (const w of allWords) {
+          if (question.includes(w.cn)) {
+            return `${w.emoji} "${w.cn}" 用英语说是 <strong>${w.en}</strong>\n音标：${w.ph}\n第${findDayForWord(w.en)}天会学到这个词！`;
+          }
+        }
+        return '告诉我你想用英语说什么，我来帮你翻译！\n比如 "妈妈用英语怎么说"～';
       }
       
-      if (q.includes('怎么说') || q.includes('英语怎么')) {
-        if (q.includes('我爱你')) {
-          return '💕 "我爱你"用英语说是 "I love you"！\n\nlove 的发音是 /lʌv/，记得要大声说出来哦～';
+      // 6. 造句/例句/怎么用
+      if (q.includes('造句') || q.includes('例句') || q.includes('怎么用') || q.includes('用法')) {
+        const word = extractWord(question);
+        if (word) {
+          const wordData = findWordInData(word);
+          if (wordData) {
+            return `这里有一个 <strong>${wordData.en}</strong> (${wordData.cn}) 的例句：\n"I ${wordData.en} every day." (我每天${wordData.cn})\n多读绘本中的句子，你会学到更多用法！`;
+          }
         }
-        if (q.includes('你好')) {
-          return '👋 "你好"用英语说是 "Hello" 或者 "Hi"！\n\nHello 更正式，Hi 更随意～';
-        }
-        if (q.includes('谢谢')) {
-          return '🙏 "谢谢"用英语说是 "Thank you"！\n\n可以简单说 "Thanks"～';
-        }
-        return '告诉我你想用英语说什么，我来教你～';
+        return '告诉我你想用哪个单词造句？\n比如 "apple怎么造句"～';
       }
       
-      // 默认回答
-      return `这是个好问题！${question}\n\n姑姑建议你：\n1. 先在"学单词"里打卡学习\n2. 在"读绘本"里看看这个词怎么用\n3. 多听多读，慢慢就会啦！\n\n加油哦！💪`;
+      // 7. 区别/对比
+      if (q.includes('区别') || q.includes('对比') || q.includes('不一样') || q.includes('有什么不同')) {
+        if (q.includes('good') && q.includes('well')) return '<strong>good</strong> 是形容词（好的），<strong>well</strong> 是副词（好地）。\n例：He is a good boy. / He plays well.';
+        if (q.includes('big') && q.includes('large')) return '<strong>big</strong> 和 <strong>large</strong> 都表示"大"，big更口语化，large更正式。';
+        if (q.includes('see') && q.includes('look')) return '<strong>see</strong> = 看到了（结果），<strong>look</strong> = 去看（动作）。\n例：I see a bird! / Look at the bird!';
+        if (q.includes('listen') && q.includes('hear')) return '<strong>listen</strong> = 去听（动作），<strong>hear</strong> = 听到了（结果）。\n例：Listen to me! / I hear the music.';
+        return '告诉我你想比较哪两个词？\n比如 "good和well的区别"～';
+      }
+      
+      // 8. 打招呼/闲聊
+      if (q.includes('你好') || q.includes('嗨') || q.includes('hi') || q === 'hello') return '👋 你好呀！有什么英语问题想问我吗？\n可以问我单词发音、意思、翻译哦～';
+      if (q.includes('谢谢') || q.includes('thanks') || q === 'thank you') return '😊 不客气！有问题随时来问我哦～';
+      if (q.includes('你是谁') || q.includes('你叫什么')) return '👩‍🏫 我是英语姑姑！专门帮你学英语的～\n可以问我单词怎么读、怎么翻译、有什么意思！';
+      if (q.includes('你好笨') || q.includes('好傻') || q.includes('好蠢')) return '😅 姑姑还在学习变得更聪明呢！\n试试直接输入一个单词或中文，我会给你详细答案哦～';
+      
+      // 9. 包含词库中文词 → 自动翻译
+      const allWords = WORDS_DATA.flatMap(d => d.words);
+      for (const w of allWords) {
+        if (question.includes(w.cn) && question.includes(w.cn) && !q.includes('什么意思') && !q.includes('怎么说') && !q.includes('怎么读')) {
+          return `${w.emoji} 你是在说 <strong>${w.cn}</strong> 吗？\n英语是 <strong>${w.en}</strong>\n音标：${w.ph}\n有什么想了解的，可以继续问我！`;
+        }
+      }
+      
+      // 10. 默认 - 尝试翻译成英语
+      for (const [cn, en] of Object.entries(CN_EN_DICT)) {
+        if (question.includes(cn)) {
+          return `"${cn}" 的英语是 <strong>${en}</strong>\n继续问我更多问题吧！😊`;
+        }
+      }
+      
+      // 11. 最终兜底
+      return `我暂时不太理解这个问题 😅\n\n但我可以帮你：\n📌 输入单词查发音和意思\n📌 输入中文查英语翻译\n📌 问"XX怎么说/怎么读/什么意思"\n\n试试问我具体的问题吧！`;
     }
     
     function extractWord(text) {
       // 提取英文单词
-      const enMatch = text.match(/\b[a-zA-Z]+\b/);
-      if (enMatch) return enMatch[0].toLowerCase();
+      const enMatch = text.match(/\b([a-zA-Z]+(?:\s[a-zA-Z]+)?)\b/);
+      if (enMatch) return enMatch[1].toLowerCase();
       
-      // 提取中文词
-      const cnMatch = text.match(/[\"\"'']([^\"\"'']+)[\"\"'']/);
-      if (cnMatch) return cnMatch[1];
+      // 提取引号内的内容
+      const quoteMatch = text.match(/[\"\"'']([^\"\"'']+)[\"\"'']/);
+      if (quoteMatch) return quoteMatch[1];
+      
+      // 提取中文
+      const cnWords = WORDS_DATA.flatMap(d => d.words);
+      for (const w of cnWords) {
+        if (text.includes(w.cn)) return w.cn;
+      }
       
       return null;
     }
     
     function findWordInData(word) {
+      const allWords = WORDS_DATA.flatMap(d => d.words);
+      return allWords.find(w => 
+        w.en.toLowerCase() === word.toLowerCase() || 
+        w.cn === word ||
+        w.cn.includes(word) ||
+        word.includes(w.cn)
+      ) || null;
+    }
+    
+    function findDayForWord(wordEn) {
       for (const dayData of WORDS_DATA) {
-        for (const w of dayData.words) {
-          if (w.en.toLowerCase() === word.toLowerCase() || w.cn === word) {
-            return w;
-          }
+        if (dayData.words.find(w => w.en.toLowerCase() === wordEn.toLowerCase())) {
+          return dayData.day;
         }
       }
-      return null;
+      return '?';
     }
     
     // 回车发送
