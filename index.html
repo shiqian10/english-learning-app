@@ -865,12 +865,12 @@
           btnElement.style.transform = '';
           btnElement.style.background = '';
           btnElement.style.color = '';
-        }, 800);
+        }, 1000);
       }
       
       window.speechSynthesis.cancel();
       
-      // 查找最佳英语语音
+      // 查找最佳英语语音 - 优先选清晰慢速的
       let enVoice = cachedVoices.find(v => v.lang.includes('en-US') && v.name.includes('Samantha'))
                    || cachedVoices.find(v => v.lang.includes('en-US'))
                    || cachedVoices.find(v => v.lang.startsWith('en') && !v.lang.includes('GB'))
@@ -878,7 +878,7 @@
       
       const u = new SpeechSynthesisUtterance(word);
       u.lang = 'en-US';
-      u.rate = 0.7;
+      u.rate = 0.5; // 慢速，避免吞音
       u.pitch = 1.0;
       u.volume = 1;
       
@@ -887,25 +887,6 @@
       }
       
       window.speechSynthesis.speak(u);
-      
-      const dayData = WORDS_DATA.find(d => d.day === currentDay);
-      const wordObj = dayData?.words.find(w => w.en.toLowerCase() === word.toLowerCase());
-      if (wordObj) {
-        const delay = Math.max(600, word.length * 120);
-        setTimeout(() => {
-          window.speechSynthesis.cancel();
-          const cnUtt = new SpeechSynthesisUtterance(wordObj.cn);
-          cnUtt.lang = 'zh-CN';
-          cnUtt.rate = 0.85;
-          cnUtt.pitch = 1.0;
-          
-          let cnVoice = cachedVoices.find(v => v.lang.includes('zh-CN'))
-                       || cachedVoices.find(v => v.lang.startsWith('zh'));
-          if (cnVoice) cnUtt.voice = cnVoice;
-          
-          window.speechSynthesis.speak(cnUtt);
-        }, delay);
-      }
     }
 
     // ========== 画画功能 ==========
