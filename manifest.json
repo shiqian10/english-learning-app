@@ -1,0 +1,22 @@
+{
+  "name": "小侄女的英语乐园",
+  "short_name": "英语乐园",
+  "description": "每天6个单词，45天学会270个高频英语词",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF5F5",
+  "theme_color": "#FF6B9D",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%23FF6B9D'/><text x='96' y='140' font-size='120' text-anchor='middle'>🌈</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%23FF6B9D'/><text x='256' y='380' font-size='320' text-anchor='middle'>🌈</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

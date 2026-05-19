@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="英语乐园">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#FF6B9D">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌈</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%23FF6B9D'/><text x='96' y='140' font-size='120' text-anchor='middle'>🌈</text></svg>">
+  <title>英语乐园 🌈</title>
+  <script src="data.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --pink: #FF6B9D;
+      --blue: #4ECDC4;
+      --yellow: #FFE66D;
+      --orange: #FF9F43;
+      --purple: #A78BFA;
+      --green: #34D399;
+      --red: #F87171;
+      --bg: #FFF5F5;
+      --card-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-top: env(safe-area-inset-top, 0px);
+      --nav-height: 64px;
+      --font: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    }
+    
+    html {
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      height: 100%;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ========== App Shell布局 ========== */
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+    }
+
+    /* ========== 顶部栏 ========== */
+    .top-bar {
+      background: linear-gradient(135deg, var(--pink), var(--orange));
+      padding: calc(var(--safe-top) + 12px) 20px 12px;
+      color: white;
+      text-align: center;
+      flex-shrink: 0;
+      z-index: 100;
+      position: relative;
+    }
+    .top-bar::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(to bottom, rgba(255,107,157,0.15), transparent);
+    }
+    .top-bar h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .top-bar .day-info {
+      font-size: 13px;
+      opacity: 0.85;
+      margin-top: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .top-bar .day-info .progress-mini {
+      background: rgba(255,255,255,0.25);
+      border-radius: 6px;
+      height: 6px;
+      width: 80px;
+      overflow: hidden;
+    }
+    .top-bar .day-info .progress-mini-inner {
+      height: 100%;
+      background: white;
+      border-radius: 6px;
+      transition: width 0.5s ease;
+    }
+
+    /* ========== 主内容区 ========== */
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      padding: 16px 16px calc(var(--nav-height) + var(--safe-bottom) + 16px) 16px;
+    }
+    .main-content::-webkit-scrollbar { display: none; }
+
+    /* ========== 天数选择器 ========== */
+    .day-selector {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      padding: 6px 0;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x mandatory;
+    }
+    .day-selector::-webkit-scrollbar { display: none; }
+    .day-btn {
+      min-width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 1.5px solid #E5E7EB;
+      background: white;
+      color: #888;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      scroll-snap-align: start;
+      touch-action: manipulation;
+    }
+    .day-btn:active { transform: scale(0.92); }
+    .day-btn.active {
+      background: linear-gradient(135deg, var(--pink), var(--orange));
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 2px 8px rgba(255,107,157,0.25);
+    }
+    .day-btn.completed {
+      background: var(--green);
+      border-color: transparent;
+      color: white;
+      font-size: 12px;
+    }
+    .day-btn.completed.active {
+      background: linear-gradient(135deg, var(--pink), var(--orange));
+      border-color: transparent;
+    }
+
+    /* ========== 提示框 ========== */
+    .hint-box {
+      background: linear-gradient(135deg, rgba(255,107,157,0.06), rgba(78,205,196,0.06));
+      border: 1.5px dashed var(--pink);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .hint-box p {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
+    }
+    .hint-box .hint-icon { font-size: 20px; margin-bottom: 2px; }
+    .hint-box strong { color: var(--pink); }
+
+    /* ========== 单词学习卡片 ========== */
+    .words-panel, .story-panel, .vocab-panel { display: none; }
+    .words-panel.active, .story-panel.active, .vocab-panel.active { display: block; }
+    
+    .word-card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: transform 0.15s ease;
+      position: relative;
+      overflow: hidden;
+      touch-action: manipulation;
+      min-height: 72px;
+    }
+    .word-card:active { transform: scale(0.98); }
+    .word-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 3px;
+    }
+    .word-card:nth-child(1)::before { background: var(--pink); }
+    .word-card:nth-child(2)::before { background: var(--blue); }
+    .word-card:nth-child(3)::before { background: var(--yellow); }
+    .word-card:nth-child(4)::before { background: var(--purple); }
+    .word-card:nth-child(5)::before { background: var(--green); }
+    
+    .word-emoji { font-size: 36px; flex-shrink: 0; }
+    .word-info { flex: 1; min-width: 0; }
+    .word-en {
+      font-size: 22px;
+      font-weight: 700;
+      color: #333;
+      letter-spacing: 0.5px;
+    }
+    .word-ph {
+      font-size: 13px;
+      color: #9CA3AF;
+      font-family: 'Lucida Sans Unicode', 'Arial Unicode MS', sans-serif;
+      margin-top: 1px;
+      letter-spacing: 0.5px;
+    }
+    .word-cn {
+      font-size: 14px;
+      color: #888;
+      margin-top: 2px;
+      transition: all 0.25s ease;
+    }
+    .word-cn.hidden-cn {
+      color: var(--pink);
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .word-card .speak-btn {
+      background: none;
+      border: 1.5px solid var(--blue);
+      color: var(--blue);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+      line-height: 1;
+      touch-action: manipulation;
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .word-card .speak-btn:active {
+      background: var(--blue);
+      color: white;
+      transform: scale(0.9);
+    }
+    .word-card .reveal-btn {
+      background: none;
+      border: 1.5px solid var(--pink);
+      color: var(--pink);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+      touch-action: manipulation;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .word-card .reveal-btn:active {
+      background: var(--pink);
+      color: white;
+      transform: scale(0.95);
+    }
+    .word-card .learned-badge {
+      background: var(--green);
+      color: white;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    /* ========== 绘本阅读 ========== */
+    .story-title-card {
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      color: white;
+      margin-bottom: 14px;
+      box-shadow: 0 3px 12px rgba(78,205,196,0.25);
+    }
+    .story-title-card .day-badge {
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 3px 10px;
+      font-size: 12px;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+    .story-title-card h2 { font-size: 22px; font-weight: 700; }
+    .story-title-card .title-en { font-size: 15px; opacity: 0.85; margin-top: 3px; }
+
+    .story-page {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: var(--card-shadow);
+      position: relative;
+    }
+    .story-page .page-num {
+      position: absolute;
+      top: 10px; right: 14px;
+      background: var(--yellow);
+      color: #333;
+      width: 26px; height: 26px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .story-page .illustration {
+      background: #F9FAFB;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 13px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    .story-page .story-text {
+      font-size: 17px;
+      line-height: 2;
+      color: #333;
+    }
+    .story-text .word-highlight {
+      color: var(--pink);
+      font-weight: 700;
+      font-size: 19px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border-bottom: 2px dotted var(--pink);
+      touch-action: manipulation;
+      padding: 2px 0;
+    }
+    .story-text .word-highlight:active { transform: scale(1.05); }
+    .story-text .word-highlight.no-cn::after {
+      content: '🤔';
+      font-size: 14px;
+      position: relative;
+      top: -2px;
+      margin-left: 1px;
+    }
+    .story-text .word-highlight.has-cn::after {
+      content: attr(data-cn);
+      font-size: 12px;
+      color: var(--blue);
+      font-weight: 600;
+      margin-left: 3px;
+      position: relative;
+      top: -2px;
+    }
+
+    /* ========== 画画区域 ========== */
+    .draw-area {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 16px;
+      box-shadow: var(--card-shadow);
+    }
+    .draw-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .draw-title-text {
+      font-size: 16px;
+      font-weight: 700;
+      color: #333;
+    }
+    .draw-title-text span { color: var(--pink); }
+    .draw-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .draw-color-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2.5px solid #E5E7EB;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+      touch-action: manipulation;
+    }
+    .draw-color-btn.active {
+      border-color: #333;
+      transform: scale(1.15);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+    .draw-tool-btn {
+      background: #F3F4F6;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: #666;
+      cursor: pointer;
+      touch-action: manipulation;
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.15s;
+    }
+    .draw-tool-btn:active { transform: scale(0.92); background: #E5E7EB; }
+    .draw-tool-btn.active { background: var(--pink); color: white; }
+    .draw-separator {
+      width: 1px;
+      height: 20px;
+      background: #E5E7EB;
+      flex-shrink: 0;
+    }
+    .draw-canvas-wrap {
+      border: 2px dashed #E5E7EB;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #FEFEFE;
+      position: relative;
+    }
+    .draw-canvas {
+      display: block;
+      width: 100%;
+      touch-action: none;
+      cursor: crosshair;
+    }
+    .draw-canvas.eraser-mode { cursor: cell; }
+
+    /* ========== 完成按钮 ========== */
+    .complete-section {
+      text-align: center;
+      margin-top: 20px;
+      padding-bottom: 20px;
+    }
+    .complete-btn {
+      background: linear-gradient(135deg, var(--green), var(--blue));
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 36px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 3px 12px rgba(52,211,153,0.25);
+      touch-action: manipulation;
+      min-height: 48px;
+    }
+    .complete-btn:active { transform: scale(0.95); }
+    .complete-btn.done {
+      background: #E5E7EB;
+      color: #888;
+      box-shadow: none;
+    }
+
+    /* ========== 词汇总览 ========== */
+    .vocab-day-group { margin-bottom: 10px; }
+    .vocab-day-header {
+      background: linear-gradient(135deg, rgba(255,107,157,0.08), rgba(78,205,196,0.08));
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      touch-action: manipulation;
+      min-height: 48px;
+    }
+    .vocab-day-header:active { transform: scale(0.98); }
+    .vocab-day-header .day-tag {
+      background: var(--pink);
+      color: white;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 12px;
+    }
+    .vocab-day-header .expand-icon {
+      font-size: 16px;
+      color: #888;
+      transition: transform 0.25s;
+    }
+    .vocab-day-header.expanded .expand-icon { transform: rotate(90deg); }
+    .vocab-words { display: none; padding: 6px 0; }
+    .vocab-words.expanded {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .vocab-word-tag {
+      background: white;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .vocab-word-tag .tag-emoji { font-size: 14px; }
+    .vocab-word-tag .tag-en { font-weight: 600; color: #333; }
+    .vocab-word-tag .tag-cn { color: #888; font-size: 11px; }
+    .vocab-word-tag.today-word {
+      border-color: var(--pink);
+      background: rgba(255,107,157,0.04);
+    }
+    .vocab-word-tag.learned-word {
+      border-color: var(--green);
+      background: rgba(52,211,153,0.04);
+    }
+
+    /* ========== 底部导航 ========== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: calc(var(--nav-height) + var(--safe-bottom));
+      padding-bottom: var(--safe-bottom);
+      background: white;
+      display: flex;
+      z-index: 100;
+      box-shadow: 0 -1px 8px rgba(0,0,0,0.06);
+      border-top: 1px solid rgba(0,0,0,0.04);
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      touch-action: manipulation;
+      padding: 8px 0;
+      position: relative;
+    }
+    .nav-btn .nav-icon {
+      font-size: 24px;
+      line-height: 1;
+      transition: transform 0.2s;
+    }
+    .nav-btn:active .nav-icon { transform: scale(0.85); }
+    .nav-btn.active {
+      color: var(--pink);
+    }
+    .nav-btn.active .nav-icon {
+      transform: scale(1.05);
+    }
+    .nav-btn.active::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 25%;
+      right: 25%;
+      height: 2px;
+      background: var(--pink);
+      border-radius: 2px;
+    }
+
+    /* ========== Toast ========== */
+    .toast {
+      position: fixed;
+      top: calc(var(--safe-top) + 60px);
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: linear-gradient(135deg, var(--green), var(--blue));
+      color: white;
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 200;
+      opacity: 0;
+      transition: all 0.25s ease;
+      box-shadow: 0 3px 12px rgba(52,211,153,0.35);
+      pointer-events: none;
+      max-width: 85vw;
+      text-align: center;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ========== 庆祝 ========== */
+    .celebration {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.3);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .celebration.show { opacity: 1; pointer-events: auto; }
+    .celebration-card {
+      background: white;
+      border-radius: 20px;
+      padding: 28px 24px;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      animation: popIn 0.4s ease;
+      margin: 0 24px;
+      max-width: 320px;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.6); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .celebration-card .cele-emoji { font-size: 50px; margin-bottom: 10px; }
+    .celebration-card h3 { font-size: 22px; color: #333; margin-bottom: 6px; }
+    .celebration-card p { font-size: 14px; color: #888; line-height: 1.5; }
+    .celebration-card .cele-btn {
+      background: linear-gradient(135deg, var(--pink), var(--orange));
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 28px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 14px;
+      touch-action: manipulation;
+    }
+
+    /* ========== 单词弹窗 ========== */
+    .word-popup {
+      position: fixed;
+      background: white;
+      border-radius: 14px;
+      padding: 10px 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      z-index: 150;
+      animation: popIn 0.25s ease;
+      text-align: center;
+      max-width: 180px;
+    }
+    .word-popup .popup-word { font-size: 18px; font-weight: 700; color: var(--pink); }
+    .word-popup .popup-cn { font-size: 13px; color: var(--blue); margin-top: 3px; }
+    .word-popup .popup-emoji { font-size: 22px; margin-top: 3px; }
+
+    /* ========== 滑动切换面板 ========== */
+    .panel-wrapper {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* ========== 页面切换动画 ========== */
+    @keyframes slideInRight {
+      from { transform: translateX(30px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideInLeft {
+      from { transform: translateX(-30px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .slide-in-right { animation: slideInRight 0.3s ease; }
+    .slide-in-left { animation: slideInLeft 0.3s ease; }
+  </style>
+</head>
+<body>
+
+  <div class="app-shell">
+    <!-- 顶部栏 -->
+    <div class="top-bar">
+      <h1>🌈 英语乐园</h1>
+      <div class="day-info">
+        <span id="topDayLabel">第1天</span>
+        <span id="topWordCount">0/270词</span>
+        <div class="progress-mini">
+          <div class="progress-mini-inner" id="topProgressBar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content" id="mainContent">
+      
+      <!-- 天数选择器 -->
+      <div class="day-selector" id="daySelector"></div>
+
+      <!-- 学单词 -->
+      <div class="words-panel active" id="wordsPanel">
+        <div class="hint-box">
+          <div class="hint-icon">💡</div>
+          <p>今天学的6个单词，绘本里<strong>不会显示中文</strong>！<br>点击「想一想」试试你记住了没？</p>
+        </div>
+        <div id="wordsCards"></div>
+        <div class="complete-section" id="completeSection">
+          <button class="complete-btn" id="completeBtn" onclick="markDayComplete()">
+            ✅ 完成今天的学习！
+          </button>
+        </div>
+      </div>
+
+      <!-- 读绘本 -->
+      <div class="story-panel" id="storyPanel">
+        <div class="hint-box">
+          <div class="hint-icon">📖</div>
+          <p><strong>粉色</strong>单词 = 今天学的，🤔自己想中文！<br>蓝色小字 = 以前学过的，有中文提示</p>
+        </div>
+        <div id="storyContent"></div>
+      </div>
+
+      <!-- 词汇表 -->
+      <div class="vocab-panel" id="vocabPanel">
+        <div id="vocabContent"></div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+      <button class="nav-btn active" id="navWords" onclick="switchTab('words')">
+        <span class="nav-icon">📚</span>
+        <span>学单词</span>
+      </button>
+      <button class="nav-btn" id="navStory" onclick="switchTab('story')">
+        <span class="nav-icon">📖</span>
+        <span>读绘本</span>
+      </button>
+      <button class="nav-btn" id="navVocab" onclick="switchTab('vocab')">
+        <span class="nav-icon">🗂️</span>
+        <span>词汇表</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- 庆祝动画 -->
+  <div class="celebration" id="celebration">
+    <div class="celebration-card">
+      <div class="cele-emoji">🎉</div>
+      <h3>太棒了！</h3>
+      <p id="cele-text">今天的单词全部学会了！</p>
+      <button class="cele-btn" onclick="closeCelebration()">继续学习</button>
+    </div>
+  </div>
+
+  <script>
+    // ========== 状态管理 ==========
+    let currentDay = 1;
+    let currentTab = 'words';
+    let completedDays = {};
+    let revealedWords = {};
+
+    function loadProgress() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('eng_learn_progress') || '{}');
+        completedDays = saved.completedDays || {};
+        revealedWords = saved.revealedWords || {};
+        currentDay = saved.currentDay || 1;
+        const todayDate = new Date().toDateString();
+        const lastDate = saved.lastDate || '';
+        if (todayDate !== lastDate) {
+          for (let d = 1; d <= 45; d++) {
+            if (!completedDays[d]) { currentDay = d; break; }
+          }
+        }
+      } catch(e) { currentDay = 1; }
+    }
+
+    function saveProgress() {
+      localStorage.setItem('eng_learn_progress', JSON.stringify({
+        completedDays, revealedWords, currentDay,
+        lastDate: new Date().toDateString()
+      }));
+    }
+
+    // ========== 已学单词列表 ==========
+    function getPreviouslyLearnedWords(beforeDay) {
+      const learned = [];
+      for (let d = 1; d < beforeDay; d++) {
+        if (completedDays[d]) {
+          const dayData = WORDS_DATA.find(w => w.day === d);
+          if (dayData) dayData.words.forEach(w => learned.push(w.en.toLowerCase()));
+        }
+      }
+      return learned;
+    }
+
+    // ========== 朗读功能 ==========
+    function speakWord(word) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        
+        // 尝试找到英语语音
+        const voices = window.speechSynthesis.getVoices();
+        const enVoice = voices.find(v => v.lang.includes('en') && !v.lang.includes('GB')) 
+                    || voices.find(v => v.lang.startsWith('en'));
+        
+        const u = new SpeechSynthesisUtterance(word);
+        u.lang = 'en-US';
+        u.rate = 0.65; // 放慢语速，更清晰
+        u.pitch = 1.15; // 稍微提高音调，更活泼
+        u.volume = 1;
+        
+        if (enVoice) {
+          u.voice = enVoice;
+        }
+        
+        window.speechSynthesis.speak(u);
+        
+        // 朗读完中文意思
+        const dayData = WORDS_DATA.find(d => d.day === currentDay);
+        const wordObj = dayData?.words.find(w => w.en.toLowerCase() === word.toLowerCase());
+        if (wordObj) {
+          setTimeout(() => {
+            const cnUtt = new SpeechSynthesisUtterance(wordObj.cn);
+            cnUtt.lang = 'zh-CN';
+            cnUtt.rate = 0.8;
+            window.speechSynthesis.speak(cnUtt);
+          }, Math.max(800, word.length * 150));
+        }
+      }
+    }
+
+    // ========== 画画功能 ==========
+    let drawColor = '#333';
+    let drawSize = 6;
+    let drawEraser = false;
+    let drawHistory = [];
+    let drawCanvas, drawCtx;
+    let isDrawing = false;
+    let lastX, lastY;
+
+    function initDrawCanvas() {
+      drawCanvas = document.getElementById('drawCanvas');
+      if (!drawCanvas) return;
+      drawCtx = drawCanvas.getContext('2d');
+      
+      // 设置画布尺寸
+      const wrap = drawCanvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      const w = wrap.clientWidth - 4; // 减去border
+      const h = 200;
+      drawCanvas.width = w * dpr;
+      drawCanvas.height = h * dpr;
+      drawCanvas.style.height = h + 'px';
+      drawCtx.scale(dpr, dpr);
+      
+      // 白色背景
+      drawCtx.fillStyle = '#FEFEFE';
+      drawCtx.fillRect(0, 0, w, h);
+      
+      // 加载已保存的画
+      loadDrawData();
+      
+      // 清空历史
+      drawHistory = [];
+      saveDrawState();
+      
+      // 触摸事件
+      drawCanvas.addEventListener('touchstart', onDrawStart, { passive: false });
+      drawCanvas.addEventListener('touchmove', onDrawMove, { passive: false });
+      drawCanvas.addEventListener('touchend', onDrawEnd);
+      drawCanvas.addEventListener('touchcancel', onDrawEnd);
+      
+      // 鼠标事件
+      drawCanvas.addEventListener('mousedown', onDrawStartMouse);
+      drawCanvas.addEventListener('mousemove', onDrawMoveMouse);
+      drawCanvas.addEventListener('mouseup', onDrawEnd);
+      drawCanvas.addEventListener('mouseleave', onDrawEnd);
+    }
+
+    function getDrawPos(e) {
+      const rect = drawCanvas.getBoundingClientRect();
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    }
+
+    function onDrawStart(e) {
+      e.preventDefault();
+      isDrawing = true;
+      const touch = e.touches[0];
+      const pos = getDrawPos(touch);
+      lastX = pos.x;
+      lastY = pos.y;
+      // 画一个点
+      drawCtx.beginPath();
+      drawCtx.arc(pos.x, pos.y, drawEraser ? drawSize * 2 : drawSize / 2, 0, Math.PI * 2);
+      drawCtx.fillStyle = drawEraser ? '#FEFEFE' : drawColor;
+      drawCtx.fill();
+    }
+
+    function onDrawMove(e) {
+      e.preventDefault();
+      if (!isDrawing) return;
+      const touch = e.touches[0];
+      const pos = getDrawPos(touch);
+      drawCtx.beginPath();
+      drawCtx.moveTo(lastX, lastY);
+      drawCtx.lineTo(pos.x, pos.y);
+      drawCtx.strokeStyle = drawEraser ? '#FEFEFE' : drawColor;
+      drawCtx.lineWidth = drawEraser ? drawSize * 4 : drawSize;
+      drawCtx.lineCap = 'round';
+      drawCtx.lineJoin = 'round';
+      drawCtx.stroke();
+      lastX = pos.x;
+      lastY = pos.y;
+    }
+
+    function onDrawStartMouse(e) {
+      isDrawing = true;
+      const pos = getDrawPos(e);
+      lastX = pos.x;
+      lastY = pos.y;
+      drawCtx.beginPath();
+      drawCtx.arc(pos.x, pos.y, drawEraser ? drawSize * 2 : drawSize / 2, 0, Math.PI * 2);
+      drawCtx.fillStyle = drawEraser ? '#FEFEFE' : drawColor;
+      drawCtx.fill();
+    }
+
+    function onDrawMoveMouse(e) {
+      if (!isDrawing) return;
+      const pos = getDrawPos(e);
+      drawCtx.beginPath();
+      drawCtx.moveTo(lastX, lastY);
+      drawCtx.lineTo(pos.x, pos.y);
+      drawCtx.strokeStyle = drawEraser ? '#FEFEFE' : drawColor;
+      drawCtx.lineWidth = drawEraser ? drawSize * 4 : drawSize;
+      drawCtx.lineCap = 'round';
+      drawCtx.lineJoin = 'round';
+      drawCtx.stroke();
+      lastX = pos.x;
+      lastY = pos.y;
+    }
+
+    function onDrawEnd() {
+      if (isDrawing) {
+        isDrawing = false;
+        saveDrawState();
+      }
+    }
+
+    function saveDrawState() {
+      if (!drawCanvas) return;
+      drawHistory.push(drawCanvas.toDataURL());
+      if (drawHistory.length > 30) drawHistory.shift(); // 最多保存30步
+      // 保存到localStorage
+      try {
+        localStorage.setItem(`draw_day_${currentDay}`, drawCanvas.toDataURL());
+      } catch(e) {}
+    }
+
+    function loadDrawData() {
+      try {
+        const saved = localStorage.getItem(`draw_day_${currentDay}`);
+        if (saved) {
+          const img = new Image();
+          img.onload = () => {
+            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+            drawCtx.drawImage(img, 0, 0, drawCanvas.width / (window.devicePixelRatio || 1), drawCanvas.height / (window.devicePixelRatio || 1));
+          };
+          img.src = saved;
+        }
+      } catch(e) {}
+    }
+
+    function setDrawColor(color, idx) {
+      drawColor = color;
+      drawEraser = false;
+      document.getElementById('eraserBtn')?.classList.remove('active');
+      drawCanvas?.classList.remove('eraser-mode');
+      document.querySelectorAll('.draw-color-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === idx);
+      });
+    }
+
+    function setBrushSize(size) {
+      drawSize = size;
+      document.getElementById('brushThin')?.classList.toggle('active', size === 3);
+      document.getElementById('brushMid')?.classList.toggle('active', size === 6);
+      document.getElementById('brushBold')?.classList.toggle('active', size === 12);
+    }
+
+    function toggleEraser() {
+      drawEraser = !drawEraser;
+      const btn = document.getElementById('eraserBtn');
+      btn?.classList.toggle('active', drawEraser);
+      drawCanvas?.classList.toggle('eraser-mode', drawEraser);
+    }
+
+    function undoDraw() {
+      if (drawHistory.length <= 1) return;
+      drawHistory.pop(); // 移除当前状态
+      const prev = drawHistory[drawHistory.length - 1];
+      const img = new Image();
+      img.onload = () => {
+        drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+        drawCtx.drawImage(img, 0, 0, drawCanvas.width / (window.devicePixelRatio || 1), drawCanvas.height / (window.devicePixelRatio || 1));
+        // 更新localStorage
+        try { localStorage.setItem(`draw_day_${currentDay}`, prev); } catch(e) {}
+      };
+      img.src = prev;
+    }
+
+    function clearDraw() {
+      if (!drawCanvas || !drawCtx) return;
+      const dpr = window.devicePixelRatio || 1;
+      drawCtx.fillStyle = '#FEFEFE';
+      drawCtx.fillRect(0, 0, drawCanvas.width / dpr, drawCanvas.height / dpr);
+      saveDrawState();
+    }
+
+    // ========== 绘本中点击单词 ==========
+    function onStoryWordClick(event, wordEn) {
+      speakWord(wordEn);
+      const dayData = WORDS_DATA.find(d => d.day === currentDay);
+      const todayWords = dayData ? dayData.words : [];
+      const isToday = todayWords.find(w => w.en.toLowerCase() === wordEn.toLowerCase());
+      
+      const oldPopup = document.querySelector('.word-popup');
+      if (oldPopup) oldPopup.remove();
+      
+      if (isToday && !completedDays[currentDay]) {
+        const popup = document.createElement('div');
+        popup.className = 'word-popup';
+        popup.innerHTML = `
+          <div class="popup-word">${isToday.en}</div>
+          <div class="popup-emoji">${isToday.emoji}</div>
+          <div class="popup-cn" style="color:var(--pink)">🤔 你能想到中文意思吗？</div>
+        `;
+        document.body.appendChild(popup);
+        const rect = event.target.getBoundingClientRect();
+        popup.style.top = `${rect.bottom + 6}px`;
+        popup.style.left = `${Math.max(8, Math.min(rect.left + rect.width/2 - popup.offsetWidth/2, window.innerWidth - popup.offsetWidth - 8))}px`;
+        setTimeout(() => { if (popup.parentNode) popup.remove(); }, 2500);
+      } else if (!isToday || completedDays[currentDay]) {
+        const allWords = WORDS_DATA.flatMap(d => d.words);
+        const wordObj = allWords.find(w => w.en.toLowerCase() === wordEn.toLowerCase());
+        if (wordObj) {
+          const popup = document.createElement('div');
+          popup.className = 'word-popup';
+          popup.innerHTML = `
+            <div class="popup-word">${wordObj.en}</div>
+            <div class="popup-emoji">${wordObj.emoji}</div>
+            <div class="popup-cn">${wordObj.cn}</div>
+          `;
+          document.body.appendChild(popup);
+          const rect = event.target.getBoundingClientRect();
+          popup.style.top = `${rect.bottom + 6}px`;
+          popup.style.left = `${Math.max(8, Math.min(rect.left + rect.width/2 - popup.offsetWidth/2, window.innerWidth - popup.offsetWidth - 8))}px`;
+          setTimeout(() => { if (popup.parentNode) popup.remove(); }, 2500);
+        }
+      }
+    }
+
+    // ========== 渲染天数选择器 ==========
+    function renderDaySelector() {
+      const selector = document.getElementById('daySelector');
+      selector.innerHTML = '';
+      for (let d = 1; d <= 45; d++) {
+        const btn = document.createElement('button');
+        btn.className = 'day-btn';
+        if (d === currentDay) btn.classList.add('active');
+        if (completedDays[d]) btn.classList.add('completed');
+        btn.textContent = completedDays[d] ? '✓' : d;
+        btn.onclick = () => selectDay(d);
+        selector.appendChild(btn);
+      }
+      setTimeout(() => {
+        const activeBtn = selector.querySelector('.day-btn.active');
+        if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }, 50);
+    }
+
+    // ========== 选择某天 ==========
+    function selectDay(day) {
+      currentDay = day;
+      saveProgress();
+      renderDaySelector();
+      renderCurrentView();
+      // 滚动到顶部
+      document.getElementById('mainContent').scrollTop = 0;
+    }
+
+    // ========== 渲染当前视图 ==========
+    function renderCurrentView() {
+      const completedCount = Object.keys(completedDays).length;
+      const totalLearnedWords = completedCount * 5;
+      
+      // 顶部栏信息
+      document.getElementById('topDayLabel').textContent = `第${currentDay}天`;
+      document.getElementById('topWordCount').textContent = `${totalLearnedWords}/270词`;
+      document.getElementById('topProgressBar').style.width = `${(totalLearnedWords/270)*100}%`;
+
+      // 完成按钮
+      const completeBtn = document.getElementById('completeBtn');
+      if (completedDays[currentDay]) {
+        completeBtn.className = 'complete-btn done';
+        completeBtn.textContent = '✅ 今天已完成！';
+      } else {
+        completeBtn.className = 'complete-btn';
+        completeBtn.textContent = '✅ 完成今天的学习！';
+      }
+
+      renderWordsCards();
+      renderStory();
+      renderVocab();
+    }
+
+    // ========== 渲染单词卡片 ==========
+    function renderWordsCards() {
+      const container = document.getElementById('wordsCards');
+      const dayData = WORDS_DATA.find(d => d.day === currentDay);
+      if (!dayData) { container.innerHTML = '<p>暂无数据</p>'; return; }
+
+      container.innerHTML = '';
+      dayData.words.forEach((word, idx) => {
+        const card = document.createElement('div');
+        card.className = 'word-card';
+        const isRevealed = revealedWords[currentDay] && revealedWords[currentDay].includes(idx);
+        
+        let cnDisplay;
+        if (completedDays[currentDay] || isRevealed) {
+          cnDisplay = `<div class="word-cn">${word.cn}</div>`;
+        } else {
+          cnDisplay = `<div class="word-cn hidden-cn">🤔 点击「想一想」</div>`;
+        }
+        
+        let actionBtns;
+        if (completedDays[currentDay]) {
+          actionBtns = `<button class="speak-btn" onclick="speakWord('${word.en}')" title="播放发音">🔊</button><span class="learned-badge">✓ 已学</span>`;
+        } else if (isRevealed) {
+          actionBtns = `<button class="speak-btn" onclick="speakWord('${word.en}')" title="播放发音">🔊</button><span class="learned-badge">✓ 想到了</span>`;
+        } else {
+          actionBtns = `<button class="speak-btn" onclick="speakWord('${word.en}')" title="播放发音">🔊</button><button class="reveal-btn" onclick="revealWord(${idx})">想一想 💭</button>`;
+        }
+
+        card.innerHTML = `
+          <div class="word-emoji">${word.emoji}</div>
+          <div class="word-info">
+            <div class="word-en">${word.en}</div>
+            <div class="word-ph">${word.ph || ''}</div>
+            ${cnDisplay}
+          </div>
+          ${actionBtns}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function revealWord(idx) {
+      if (!revealedWords[currentDay]) revealedWords[currentDay] = [];
+      if (!revealedWords[currentDay].includes(idx)) revealedWords[currentDay].push(idx);
+      const dayData = WORDS_DATA.find(d => d.day === currentDay);
+      if (dayData) speakWord(dayData.words[idx].en);
+      saveProgress();
+      renderWordsCards();
+      showToast('想到啦！真棒！🎉');
+    }
+
+    // ========== 渲染绘本故事 ==========
+    function renderStory() {
+      const container = document.getElementById('storyContent');
+      const storyData = STORY_DATA.find(s => s.day === currentDay);
+      if (!storyData) { container.innerHTML = '<p>暂无绘本数据</p>'; return; }
+
+      let html = `
+        <div class="story-title-card">
+          <div class="day-badge">第${currentDay}天绘本</div>
+          <h2>${storyData.title}</h2>
+          <div class="title-en">${storyData.titleEn}</div>
+        </div>
+      `;
+
+      storyData.pages.forEach((page, idx) => {
+        html += `
+          <div class="story-page">
+            <div class="page-num">${idx + 1}</div>
+            <div class="illustration">🎨 ${page.illustration}</div>
+            <div class="story-text">${processStoryText(page.text, currentDay)}</div>
+          </div>
+        `;
+      });
+
+      // 画画区域
+      html += `
+        <div class="draw-area">
+          <div class="draw-title">
+            <div class="draw-title-text">✏️ 画出你的<span>故事</span>吧！</div>
+          </div>
+          <div class="draw-toolbar">
+            <button class="draw-color-btn active" style="background:#333" onclick="setDrawColor('#333',0)"></button>
+            <button class="draw-color-btn" style="background:#FF6B9D" onclick="setDrawColor('#FF6B9D',1)"></button>
+            <button class="draw-color-btn" style="background:#3B82F6" onclick="setDrawColor('#3B82F6',2)"></button>
+            <button class="draw-color-btn" style="background:#34D399" onclick="setDrawColor('#34D399',3)"></button>
+            <button class="draw-color-btn" style="background:#F59E0B" onclick="setDrawColor('#F59E0B',4)"></button>
+            <button class="draw-color-btn" style="background:#EF4444" onclick="setDrawColor('#EF4444',5)"></button>
+            <button class="draw-color-btn" style="background:#8B5CF6" onclick="setDrawColor('#8B5CF6',6)"></button>
+            <button class="draw-color-btn" style="background:#EC4899" onclick="setDrawColor('#EC4899',7)"></button>
+            <div class="draw-separator"></div>
+            <button class="draw-tool-btn" onclick="setBrushSize(3)" id="brushThin">细</button>
+            <button class="draw-tool-btn active" onclick="setBrushSize(6)" id="brushMid">中</button>
+            <button class="draw-tool-btn" onclick="setBrushSize(12)" id="brushBold">粗</button>
+            <div class="draw-separator"></div>
+            <button class="draw-tool-btn" id="eraserBtn" onclick="toggleEraser()">🧹橡皮</button>
+            <button class="draw-tool-btn" onclick="undoDraw()">↩️撤销</button>
+            <button class="draw-tool-btn" onclick="clearDraw()">🗑️清空</button>
+          </div>
+          <div class="draw-canvas-wrap">
+            <canvas class="draw-canvas" id="drawCanvas"></canvas>
+          </div>
+        </div>
+      `;
+
+      container.innerHTML = html;
+      
+      // 初始化画布
+      initDrawCanvas();
+    }
+
+    // ========== 处理绘本文字 ==========
+    function processStoryText(text, dayNum) {
+      const dayData = WORDS_DATA.find(d => d.day === dayNum);
+      const todayWords = dayData ? dayData.words : [];
+      const allWords = WORDS_DATA.flatMap(d => d.words);
+      const previouslyLearned = getPreviouslyLearnedWords(dayNum);
+      
+      // 先处理多词词汇（如"ice cream"）
+      const multiWordPatterns = allWords
+        .filter(w => w.en.includes(' '))
+        .map(w => ({ en: w.en, regex: new RegExp(`\\b${w.en.replace(/ /g, '\\s+')}\\b`, 'gi'), wordObj: w }));
+      
+      const singleWordPattern = /\b([a-zA-Z]+(?:'[a-zA-Z]+)?)\b/g;
+      
+      let result = text;
+      for (const mwp of multiWordPatterns) {
+        result = result.replace(mwp.regex, (match) => {
+          if (todayWords.find(w => w.en.toLowerCase() === mwp.en.toLowerCase())) {
+            return `<span class="word-highlight no-cn" onclick="onStoryWordClick(event,'${mwp.en}')">${mwp.en}</span>`;
+          }
+          return `<span class="word-highlight has-cn" onclick="onStoryWordClick(event,'${mwp.en}')\" data-cn="${mwp.wordObj.cn}">${mwp.en}</span>`;
+        });
+      }
+      
+      result = result.replace(singleWordPattern, (match) => {
+        const cleaned = match.toLowerCase();
+        if (!cleaned) return match;
+        const todayMatch = todayWords.find(w => w.en.toLowerCase() === cleaned);
+        if (todayMatch) {
+          return `<span class="word-highlight no-cn" onclick="onStoryWordClick(event,'${todayMatch.en}')">${todayMatch.en}</span>`;
+        }
+        if (previouslyLearned.includes(cleaned)) {
+          const wordObj = allWords.find(w => w.en.toLowerCase() === cleaned);
+          if (wordObj) {
+            return `<span class="word-highlight has-cn" onclick="onStoryWordClick(event,'${wordObj.en}')\" data-cn="${wordObj.cn}">${wordObj.en}</span>`;
+          }
+        }
+        return match;
+      });
+      
+      return result;
+    }
+
+    // ========== 渲染词汇总览 ==========
+    function renderVocab() {
+      const container = document.getElementById('vocabContent');
+      let html = '';
+      WORDS_DATA.forEach(dayData => {
+        const isCurrentDay = dayData.day === currentDay;
+        html += `
+          <div class="vocab-day-group">
+            <div class="vocab-day-header ${isCurrentDay ? 'expanded' : ''}" onclick="toggleVocabDay(${dayData.day})">
+              <span>第${dayData.day}天 ${isCurrentDay ? '📌' : ''}</span>
+              <span class="day-tag">Day ${dayData.day}</span>
+              <span class="expand-icon">${isCurrentDay ? '▼' : '▶'}</span>
+            </div>
+            <div class="vocab-words ${isCurrentDay ? 'expanded' : ''}" id="vocabDay${dayData.day}">
+              ${dayData.words.map(w => {
+                let cls = '';
+                if (dayData.day === currentDay && !completedDays[currentDay]) cls = 'today-word';
+                else if (completedDays[dayData.day]) cls = 'learned-word';
+                const showCn = (dayData.day === currentDay && !completedDays[currentDay]) ? '🤔' : w.cn;
+                return `<span class="vocab-word-tag ${cls}"><span class="tag-emoji">${w.emoji}</span><span class="tag-en">${w.en}</span><span class="tag-cn">${showCn}</span></span>`;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function toggleVocabDay(day) {
+      const el = document.getElementById(`vocabDay${day}`);
+      const header = el.previousElementSibling;
+      el.classList.toggle('expanded');
+      header.classList.toggle('expanded');
+    }
+
+    // ========== 标记一天完成 ==========
+    function markDayComplete() {
+      if (completedDays[currentDay]) {
+        showToast('今天已经完成了哦！');
+        return;
+      }
+      const revealed = revealedWords[currentDay] || [];
+      if (revealed.length < 6) {
+        showToast('先把6个单词都「想一想」再完成哦~ 🤔');
+        return;
+      }
+      completedDays[currentDay] = true;
+      saveProgress();
+      const totalDone = Object.keys(completedDays).length;
+      document.getElementById('cele-text').textContent = 
+        totalDone === 45 ? '恭喜！45天全部完成，270个词都学会了！🏆' :
+        `第${currentDay}天完成！已学${totalDone}天${totalDone*6}个词！`;
+      document.getElementById('celebration').classList.add('show');
+      renderCurrentView();
+      renderDaySelector();
+    }
+
+    function closeCelebration() {
+      document.getElementById('celebration').classList.remove('show');
+      for (let d = currentDay + 1; d <= 45; d++) {
+        if (!completedDays[d]) { selectDay(d); return; }
+      }
+      showToast('全部45天都完成了！🏆');
+    }
+
+    // ========== 切换标签页 ==========
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.words-panel, .story-panel, .vocab-panel').forEach(p => p.classList.remove('active'));
+      
+      const animClass = 'slide-in-right';
+      
+      if (tab === 'words') {
+        document.getElementById('navWords').classList.add('active');
+        document.getElementById('wordsPanel').classList.add('active');
+        document.getElementById('wordsPanel').className = 'words-panel active ' + animClass;
+      } else if (tab === 'story') {
+        document.getElementById('navStory').classList.add('active');
+        document.getElementById('storyPanel').classList.add('active');
+        document.getElementById('storyPanel').className = 'story-panel active ' + animClass;
+      } else {
+        document.getElementById('navVocab').classList.add('active');
+        document.getElementById('vocabPanel').classList.add('active');
+        document.getElementById('vocabPanel').className = 'vocab-panel active ' + animClass;
+      }
+      
+      // 滚动到顶部
+      document.getElementById('mainContent').scrollTop = 0;
+    }
+
+    // ========== Toast ==========
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    // ========== 初始化 ==========
+    loadProgress();
+    renderDaySelector();
+    renderCurrentView();
+
+    // 防止双击缩放
+    document.addEventListener('dblclick', e => e.preventDefault());
+    
+    // 注册PWA service worker（简化版，仅缓存本页）
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        const CACHE = 'eng-learn-v1';
+        self.addEventListener('install', e => {
+          e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/index.html', '/data.js', '/manifest.json'])));
+          self.skipWaiting();
+        });
+        self.addEventListener('activate', e => { e.waitUntil(clients.claim()); });
+        self.addEventListener('fetch', e => {
+          e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+        });
+      `;
+      const blob = new Blob([swCode], {type: 'application/javascript'});
+      navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+    }
+  </script>
+</body>
+</html>
