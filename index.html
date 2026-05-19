@@ -185,18 +185,18 @@
     
     .word-card {
       background: white;
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 12px;
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
       box-shadow: var(--card-shadow);
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       transition: transform 0.15s ease;
       position: relative;
       overflow: hidden;
       touch-action: manipulation;
-      min-height: 72px;
+      min-height: 64px;
     }
     .word-card:active { transform: scale(0.98); }
     .word-card::before {
@@ -210,11 +210,12 @@
     .word-card:nth-child(3)::before { background: var(--yellow); }
     .word-card:nth-child(4)::before { background: var(--purple); }
     .word-card:nth-child(5)::before { background: var(--green); }
+    .word-card:nth-child(6)::before { background: var(--orange); }
     
-    .word-emoji { font-size: 36px; flex-shrink: 0; }
+    .word-emoji { font-size: 30px; flex-shrink: 0; }
     .word-info { flex: 1; min-width: 0; }
     .word-en {
-      font-size: 22px;
+      font-size: 19px;
       font-weight: 700;
       color: #333;
       letter-spacing: 0.5px;
@@ -242,15 +243,15 @@
       border: 1.5px solid var(--blue);
       color: var(--blue);
       border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 18px;
+      padding: 6px 8px;
+      font-size: 16px;
       cursor: pointer;
       transition: all 0.15s;
       flex-shrink: 0;
       line-height: 1;
       touch-action: manipulation;
-      min-width: 44px;
-      min-height: 44px;
+      min-width: 38px;
+      min-height: 38px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -265,13 +266,13 @@
       border: 1.5px solid var(--pink);
       color: var(--pink);
       border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 13px;
+      padding: 6px 10px;
+      font-size: 12px;
       cursor: pointer;
       transition: all 0.15s;
       flex-shrink: 0;
       touch-action: manipulation;
-      min-height: 44px;
+      min-height: 38px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -399,15 +400,15 @@
     .draw-toolbar {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       margin-bottom: 10px;
       flex-wrap: wrap;
     }
     .draw-color-btn {
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
-      border: 2.5px solid #E5E7EB;
+      border: 2px solid #E5E7EB;
       cursor: pointer;
       transition: all 0.15s;
       flex-shrink: 0;
@@ -866,21 +867,23 @@
     let drawCanvas, drawCtx;
     let isDrawing = false;
     let lastX, lastY;
+    let canvasW = 0, canvasH = 0; // 画布逻辑尺寸
 
     function initDrawCanvas() {
       drawCanvas = document.getElementById('drawCanvas');
       if (!drawCanvas) return;
       drawCtx = drawCanvas.getContext('2d');
       
-      // 设置画布尺寸
+      // 设置画布尺寸 - 正确适配手机屏幕
       const wrap = drawCanvas.parentElement;
       const dpr = window.devicePixelRatio || 1;
-      const w = wrap.clientWidth - 4; // 减去border
-      const h = 200;
-      drawCanvas.width = w * dpr;
-      drawCanvas.height = h * dpr;
-      drawCanvas.style.height = h + 'px';
-      drawCtx.scale(dpr, dpr);
+      canvasW = wrap.clientWidth - 4; // 减去border(2px * 2)
+      canvasH = Math.min(200, Math.round(canvasW * 0.55)); // 宽高比约1.8:1，适配手机
+      drawCanvas.width = Math.round(canvasW * dpr);
+      drawCanvas.height = Math.round(canvasH * dpr);
+      drawCanvas.style.height = canvasH + 'px';
+      drawCanvas.style.width = canvasW + 'px';
+      drawCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       
       // 白色背景
       drawCtx.fillStyle = '#FEFEFE';
@@ -994,8 +997,8 @@
         if (saved) {
           const img = new Image();
           img.onload = () => {
-            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-            drawCtx.drawImage(img, 0, 0, drawCanvas.width / (window.devicePixelRatio || 1), drawCanvas.height / (window.devicePixelRatio || 1));
+            drawCtx.clearRect(0, 0, canvasW, canvasH);
+            drawCtx.drawImage(img, 0, 0, canvasW, canvasH);
           };
           img.src = saved;
         }
@@ -1032,9 +1035,8 @@
       const prev = drawHistory[drawHistory.length - 1];
       const img = new Image();
       img.onload = () => {
-        drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-        drawCtx.drawImage(img, 0, 0, drawCanvas.width / (window.devicePixelRatio || 1), drawCanvas.height / (window.devicePixelRatio || 1));
-        // 更新localStorage
+        drawCtx.clearRect(0, 0, canvasW, canvasH);
+        drawCtx.drawImage(img, 0, 0, canvasW, canvasH);
         try { localStorage.setItem(`draw_day_${currentDay}`, prev); } catch(e) {}
       };
       img.src = prev;
@@ -1042,9 +1044,8 @@
 
     function clearDraw() {
       if (!drawCanvas || !drawCtx) return;
-      const dpr = window.devicePixelRatio || 1;
       drawCtx.fillStyle = '#FEFEFE';
-      drawCtx.fillRect(0, 0, drawCanvas.width / dpr, drawCanvas.height / dpr);
+      drawCtx.fillRect(0, 0, canvasW, canvasH);
       saveDrawState();
     }
 
