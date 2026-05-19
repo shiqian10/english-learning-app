@@ -456,8 +456,10 @@
     .draw-canvas {
       display: block;
       width: 100%;
+      height: 180px;
       touch-action: none;
       cursor: crosshair;
+      -webkit-touch-callout: none;
     }
     .draw-canvas.eraser-mode { cursor: cell; }
 
@@ -897,109 +899,105 @@
     let drawCanvas, drawCtx;
     let isDrawing = false;
     let lastX, lastY;
-    let canvasW = 0, canvasH = 0; // 画布逻辑尺寸
 
     function initDrawCanvas() {
       drawCanvas = document.getElementById('drawCanvas');
       if (!drawCanvas) return;
       drawCtx = drawCanvas.getContext('2d');
       
-      // 设置画布尺寸 - 正确适配手机屏幕
-      const wrap = drawCanvas.parentElement;
-      const dpr = window.devicePixelRatio || 1;
-      canvasW = wrap.clientWidth - 4; // 减去border(2px * 2)
-      canvasH = Math.min(200, Math.round(canvasW * 0.55)); // 宽高比约1.8:1，适配手机
-      drawCanvas.width = Math.round(canvasW * dpr);
-      drawCanvas.height = Math.round(canvasH * dpr);
-      drawCanvas.style.height = canvasH + 'px';
-      drawCanvas.style.width = canvasW + 'px';
-      drawCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      
-      // 白色背景
-      drawCtx.fillStyle = '#FEFEFE';
-      drawCtx.fillRect(0, 0, w, h);
-      
-      // 加载已保存的画
-      loadDrawData();
-      
-      // 清空历史
-      drawHistory = [];
-      saveDrawState();
+      // 等DOM渲染完再测量，确保位置准确
+      requestAnimationFrame(() => {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = drawCanvas.getBoundingClientRect();
+        const w = Math.round(rect.width);
+        const h = Math.round(rect.height);
+        
+        drawCanvas.width = w * dpr;
+        drawCanvas.height = h * dpr;
+        drawCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        
+        // 白色背景
+        drawCtx.fillStyle = '#FEFEFE';
+        drawCtx.fillRect(0, 0, w, h);
+        
+        loadDrawData(w, h);
+        drawHistory = [];
+        saveDrawState();
+      });
       
       // 触摸事件
-      drawCanvas.addEventListener('touchstart', onDrawStart, { passive: false });
-      drawCanvas.addEventListener('touchmove', onDrawMove, { passive: false });
-      drawCanvas.addEventListener('touchend', onDrawEnd);
-      drawCanvas.addEventListener('touchcancel', onDrawEnd);
-      
+      drawCanvas.addEventListener('touchstart', onDrawStart, false);
+      drawCanvas.addEventListener('touchmove', onDrawMove, false);
+      drawCanvas.addEventListener('touchend', onDrawEnd, false);
+      drawCanvas.addEventListener('touchcancel', onDrawEnd, false);
       // 鼠标事件
-      drawCanvas.addEventListener('mousedown', onDrawStartMouse);
-      drawCanvas.addEventListener('mousemove', onDrawMoveMouse);
-      drawCanvas.addEventListener('mouseup', onDrawEnd);
-      drawCanvas.addEventListener('mouseleave', onDrawEnd);
+      drawCanvas.addEventListener('mousedown', onDrawStartMouse, false);
+      drawCanvas.addEventListener('mousemove', onDrawMoveMouse, false);
+      drawCanvas.addEventListener('mouseup', onDrawEnd, false);
+      drawCanvas.addEventListener('mouseleave', onDrawEnd, false);
     }
 
-    function getDrawPos(e) {
+    function getDrawPos(clientX, clientY) {
       const rect = drawCanvas.getBoundingClientRect();
       return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
+        x: clientX - rect.left,
+        y: clientY - rect.top
       };
     }
 
-    function onDrawStart(e) {
-      e.preventDefault();
-      isDrawing = true;
-      const touch = e.touches[0];
-      const pos = getDrawPos(touch);
-      lastX = pos.x;
-      lastY = pos.y;
-      // 画一个点
+    function drawDot(x, y) {
       drawCtx.beginPath();
-      drawCtx.arc(pos.x, pos.y, drawEraser ? drawSize * 2 : drawSize / 2, 0, Math.PI * 2);
+      drawCtx.arc(x, y, drawEraser ? drawSize * 1.5 : drawSize / 2, 0, Math.PI * 2);
       drawCtx.fillStyle = drawEraser ? '#FEFEFE' : drawColor;
       drawCtx.fill();
     }
 
-    function onDrawMove(e) {
-      e.preventDefault();
-      if (!isDrawing) return;
-      const touch = e.touches[0];
-      const pos = getDrawPos(touch);
+    function drawLine(x1, y1, x2, y2) {
       drawCtx.beginPath();
-      drawCtx.moveTo(lastX, lastY);
-      drawCtx.lineTo(pos.x, pos.y);
+      drawCtx.moveTo(x1, y1);
+      drawCtx.lineTo(x2, y2);
       drawCtx.strokeStyle = drawEraser ? '#FEFEFE' : drawColor;
-      drawCtx.lineWidth = drawEraser ? drawSize * 4 : drawSize;
+      drawCtx.lineWidth = drawEraser ? drawSize * 3 : drawSize;
       drawCtx.lineCap = 'round';
       drawCtx.lineJoin = 'round';
       drawCtx.stroke();
+    }
+
+    function onDrawStart(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      isDrawing = true;
+      const t = e.touches[0];
+      const pos = getDrawPos(t.clientX, t.clientY);
+      lastX = pos.x;
+      lastY = pos.y;
+      drawDot(pos.x, pos.y);
+    }
+
+    function onDrawMove(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!isDrawing) return;
+      const t = e.touches[0];
+      const pos = getDrawPos(t.clientX, t.clientY);
+      drawLine(lastX, lastY, pos.x, pos.y);
       lastX = pos.x;
       lastY = pos.y;
     }
 
     function onDrawStartMouse(e) {
+      e.preventDefault();
       isDrawing = true;
-      const pos = getDrawPos(e);
+      const pos = getDrawPos(e.clientX, e.clientY);
       lastX = pos.x;
       lastY = pos.y;
-      drawCtx.beginPath();
-      drawCtx.arc(pos.x, pos.y, drawEraser ? drawSize * 2 : drawSize / 2, 0, Math.PI * 2);
-      drawCtx.fillStyle = drawEraser ? '#FEFEFE' : drawColor;
-      drawCtx.fill();
+      drawDot(pos.x, pos.y);
     }
 
     function onDrawMoveMouse(e) {
       if (!isDrawing) return;
-      const pos = getDrawPos(e);
-      drawCtx.beginPath();
-      drawCtx.moveTo(lastX, lastY);
-      drawCtx.lineTo(pos.x, pos.y);
-      drawCtx.strokeStyle = drawEraser ? '#FEFEFE' : drawColor;
-      drawCtx.lineWidth = drawEraser ? drawSize * 4 : drawSize;
-      drawCtx.lineCap = 'round';
-      drawCtx.lineJoin = 'round';
-      drawCtx.stroke();
+      const pos = getDrawPos(e.clientX, e.clientY);
+      drawLine(lastX, lastY, pos.x, pos.y);
       lastX = pos.x;
       lastY = pos.y;
     }
@@ -1013,22 +1011,22 @@
 
     function saveDrawState() {
       if (!drawCanvas) return;
-      drawHistory.push(drawCanvas.toDataURL());
-      if (drawHistory.length > 30) drawHistory.shift(); // 最多保存30步
-      // 保存到localStorage
       try {
-        localStorage.setItem(`draw_day_${currentDay}`, drawCanvas.toDataURL());
+        const data = drawCanvas.toDataURL();
+        drawHistory.push(data);
+        if (drawHistory.length > 30) drawHistory.shift();
+        localStorage.setItem(`draw_day_${currentDay}`, data);
       } catch(e) {}
     }
 
-    function loadDrawData() {
+    function loadDrawData(w, h) {
       try {
         const saved = localStorage.getItem(`draw_day_${currentDay}`);
         if (saved) {
           const img = new Image();
           img.onload = () => {
-            drawCtx.clearRect(0, 0, canvasW, canvasH);
-            drawCtx.drawImage(img, 0, 0, canvasW, canvasH);
+            drawCtx.clearRect(0, 0, w, h);
+            drawCtx.drawImage(img, 0, 0, w, h);
           };
           img.src = saved;
         }
@@ -1061,12 +1059,13 @@
 
     function undoDraw() {
       if (drawHistory.length <= 1) return;
-      drawHistory.pop(); // 移除当前状态
+      drawHistory.pop();
       const prev = drawHistory[drawHistory.length - 1];
       const img = new Image();
       img.onload = () => {
-        drawCtx.clearRect(0, 0, canvasW, canvasH);
-        drawCtx.drawImage(img, 0, 0, canvasW, canvasH);
+        const rect = drawCanvas.getBoundingClientRect();
+        drawCtx.clearRect(0, 0, rect.width, rect.height);
+        drawCtx.drawImage(img, 0, 0, rect.width, rect.height);
         try { localStorage.setItem(`draw_day_${currentDay}`, prev); } catch(e) {}
       };
       img.src = prev;
@@ -1074,8 +1073,9 @@
 
     function clearDraw() {
       if (!drawCanvas || !drawCtx) return;
+      const rect = drawCanvas.getBoundingClientRect();
       drawCtx.fillStyle = '#FEFEFE';
-      drawCtx.fillRect(0, 0, canvasW, canvasH);
+      drawCtx.fillRect(0, 0, rect.width, rect.height);
       saveDrawState();
     }
 
