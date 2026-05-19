@@ -376,6 +376,10 @@
       position: relative;
       top: -2px;
     }
+    /* 绘本中未打卡单词提示 */
+    .story-text .word-highlight.no-cn {
+      cursor: pointer;
+    }
 
     /* ========== 画画区域 ========== */
     .draw-area {
@@ -726,7 +730,7 @@
       <div class="words-panel active" id="wordsPanel">
         <div class="hint-box">
           <div class="hint-icon">💡</div>
-          <p>今天学的6个单词，绘本里<strong>不会显示中文</strong>！<br>点击「想一想」试试你记住了没？</p>
+          <p>今天学的6个单词，绘本里<strong>不会显示中文</strong>！<br>点击「完成打卡」试试你记住了没？</p>
         </div>
         <div id="wordsCards"></div>
         <div class="complete-section" id="completeSection">
@@ -740,7 +744,7 @@
       <div class="story-panel" id="storyPanel">
         <div class="hint-box">
           <div class="hint-icon">📖</div>
-          <p><strong>粉色</strong>单词 = 今天学的，🤔自己想中文！<br>蓝色小字 = 以前学过的，有中文提示</p>
+          <p><strong>粉色</strong>单词 = 今天学的，自己想中文！<br>蓝色小字 = 以前打卡过的，有中文提示</p>
         </div>
         <div id="storyContent"></div>
       </div>
@@ -1207,16 +1211,16 @@
         if (completedDays[currentDay] || isRevealed) {
           cnDisplay = `<div class="word-cn">${word.cn}</div>`;
         } else {
-          cnDisplay = `<div class="word-cn hidden-cn">🤔 点击「想一想」</div>`;
+          cnDisplay = `<div class="word-cn hidden-cn">🤔 点击「完成打卡」</div>`;
         }
         
         let actionBtns;
         if (completedDays[currentDay]) {
           actionBtns = `<button class="speak-btn" onclick="speakWord('${word.en}', this)" title="播放发音">🔊</button><span class="learned-badge">✓ 已学</span>`;
         } else if (isRevealed) {
-          actionBtns = `<button class="speak-btn" onclick="speakWord('${word.en}', this)" title="播放发音">🔊</button><span class="learned-badge">✓ 想到了</span>`;
+          actionBtns = `<button class="speak-btn" onclick="speakWord('${word.en}', this)" title="播放发音">🔊</button><span class="learned-badge">✓ 已打卡</span>`;
         } else {
-          actionBtns = `<button class="speak-btn" onclick="speakWord('${word.en}', this)" title="播放发音">🔊</button><button class="reveal-btn" onclick="revealWord(${idx})">想一想 💭</button>`;
+          actionBtns = `<button class="speak-btn" onclick="speakWord('${word.en}', this)" title="播放发音">🔊</button><button class="reveal-btn" onclick="revealWord(${idx})">打卡 ✅</button>`;
         }
 
         card.innerHTML = `
@@ -1239,7 +1243,7 @@
       if (dayData) speakWord(dayData.words[idx].en);
       saveProgress();
       renderWordsCards();
-      showToast('想到啦！真棒！🎉');
+      showToast('打卡成功！真棒！🎉');
     }
 
     // ========== 渲染绘本故事 ==========
@@ -1388,7 +1392,7 @@
       }
       const revealed = revealedWords[currentDay] || [];
       if (revealed.length < 6) {
-        showToast('先把6个单词都「想一想」再完成哦~ 🤔');
+        showToast('先把6个单词都「完成打卡」再结束哦~ ✅');
         return;
       }
       completedDays[currentDay] = true;
