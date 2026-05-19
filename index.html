@@ -1565,6 +1565,26 @@
     }
 
     // ========== 渲染绘本故事 ==========
+    // 找出英文单词并标红
+    function highlightEnglishWords(text) {
+      // 从词库找出当天和之前学过的所有单词
+      const learnedWords = new Set();
+      for (let d = 1; d <= currentDay; d++) {
+        const dayData = WORDS_DATA.find(wd => wd.day === d);
+        if (dayData) {
+          dayData.words.forEach(w => learnedWords.add(w.en.toLowerCase()));
+        }
+      }
+      
+      // 替换文本中的英文单词为红色
+      return text.replace(/\b([a-zA-Z]+)\b/g, (match) => {
+        if (learnedWords.has(match.toLowerCase())) {
+          return `<span style="color:#EF4444;font-weight:700">${match}</span>`;
+        }
+        return match;
+      });
+    }
+
     function renderStory() {
       const container = document.getElementById('storyContent');
       const storyData = STORY_DATA.find(s => s.day === currentDay);
@@ -1579,13 +1599,26 @@
       `;
 
       storyData.pages.forEach((page, idx) => {
+        // 处理两种格式：en+cn格式 或 text格式
+        let enText = '', cnText = '';
+        
+        if (page.en && page.cn) {
+          // 格式1: en + cn → 把( )替换成红色单词
+          enText = page.en.replace(/\(\s*\)/g, `<span style="color:#EF4444;font-weight:700">${page.word || ''}</span>`);
+          cnText = page.cn;
+        } else if (page.text) {
+          // 格式2: text → 找出英文单词并标红
+          enText = highlightEnglishWords(page.text);
+          cnText = '';
+        }
+        
         html += `
           <div class="story-page">
             <div class="page-num">${idx + 1}</div>
             <div class="illustration">🎨 ${page.illustration}</div>
             <div class="story-text">
-              <div style="font-weight: 700; color: #333; font-size: 18px; line-height: 2; margin-bottom: 8px;">${page.en}</div>
-              <div style="color: #666; font-size: 15px; line-height: 1.8;">${page.cn}</div>
+              <div style="font-weight: 700; color: #333; font-size: 18px; line-height: 2; margin-bottom: 8px;">${enText}</div>
+              <div style="color: #666; font-size: 15px; line-height: 1.8;">${cnText}</div>
             </div>
           </div>
         `;
