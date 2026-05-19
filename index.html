@@ -180,8 +180,8 @@
     .hint-box strong { color: var(--pink); }
 
     /* ========== 单词学习卡片 ========== */
-    .words-panel, .story-panel, .vocab-panel { display: none; }
-    .words-panel.active, .story-panel.active, .vocab-panel.active { display: block; }
+    .words-panel, .story-panel, .vocab-panel, .chat-panel { display: none; }
+    .words-panel.active, .story-panel.active, .vocab-panel.active, .chat-panel.active { display: block; }
     
     .word-card {
       background: white;
@@ -548,6 +548,170 @@
       background: rgba(52,211,153,0.04);
     }
 
+    /* ========== 问姑姑聊天界面 ========== */
+    .chat-panel {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .chat-messages::-webkit-scrollbar { display: none; }
+    .chat-message {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      animation: fadeInUp 0.3s ease;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .chat-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .chat-message.user .chat-avatar {
+      background: linear-gradient(135deg, var(--pink), var(--orange));
+      order: 2;
+    }
+    .chat-message.assistant .chat-avatar {
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+    }
+    .chat-bubble {
+      max-width: 75%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      font-size: 15px;
+      line-height: 1.6;
+      word-wrap: break-word;
+    }
+    .chat-message.user .chat-bubble {
+      background: linear-gradient(135deg, var(--pink), var(--orange));
+      color: white;
+      border-bottom-right-radius: 4px;
+      margin-left: auto;
+      order: 1;
+    }
+    .chat-message.assistant .chat-bubble {
+      background: white;
+      color: #333;
+      border-bottom-left-radius: 4px;
+      box-shadow: var(--card-shadow);
+    }
+    .chat-input-area {
+      border-top: 1px solid #E5E7EB;
+      padding: 12px 16px calc(12px + var(--safe-bottom));
+      background: white;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .chat-input {
+      flex: 1;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 20px;
+      padding: 10px 16px;
+      font-size: 15px;
+      outline: none;
+      font-family: var(--font);
+      transition: border-color 0.2s;
+    }
+    .chat-input:focus {
+      border-color: var(--pink);
+    }
+    .chat-send-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, var(--pink), var(--orange));
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .chat-send-btn:active {
+      transform: scale(0.9);
+    }
+    .chat-send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .chat-typing {
+      display: flex;
+      gap: 4px;
+      padding: 8px 0;
+    }
+    .chat-typing span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--blue);
+      animation: typing 1.4s infinite;
+    }
+    .chat-typing span:nth-child(2) { animation-delay: 0.2s; }
+    .chat-typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.7; }
+      30% { transform: translateY(-10px); opacity: 1; }
+    }
+    .chat-welcome {
+      text-align: center;
+      padding: 40px 20px;
+      color: #888;
+    }
+    .chat-welcome-icon {
+      font-size: 60px;
+      margin-bottom: 16px;
+    }
+    .chat-welcome h3 {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .chat-welcome p {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .chat-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+      justify-content: center;
+    }
+    .chat-suggestion-btn {
+      background: white;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 16px;
+      padding: 8px 14px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .chat-suggestion-btn:active {
+      transform: scale(0.95);
+      background: var(--pink);
+      color: white;
+      border-color: var(--pink);
+    }
+
     /* ========== 底部导航 ========== */
     .bottom-nav {
       position: fixed;
@@ -730,10 +894,6 @@
 
       <!-- 学单词 -->
       <div class="words-panel active" id="wordsPanel">
-        <div class="hint-box">
-          <div class="hint-icon">💡</div>
-          <p>今天学的6个单词，绘本里<strong>不会显示中文</strong>！<br>点击「完成打卡」试试你记住了没？</p>
-        </div>
         <div id="wordsCards"></div>
         <div class="complete-section" id="completeSection">
           <button class="complete-btn" id="completeBtn" onclick="markDayComplete()">
@@ -755,6 +915,26 @@
       <div class="vocab-panel" id="vocabPanel">
         <div id="vocabContent"></div>
       </div>
+
+      <!-- 问姑姑 -->
+      <div class="chat-panel" id="chatPanel">
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-welcome">
+            <div class="chat-welcome-icon">👩‍🏫</div>
+            <h3>我是英语姑姑</h3>
+            <p>有什么英语问题都可以问我哦！<br>比如单词怎么读、语法怎么用～</p>
+            <div class="chat-suggestions">
+              <button class="chat-suggestion-btn" onclick="sendQuickQuestion('mom怎么读？')">mom怎么读？</button>
+              <button class="chat-suggestion-btn" onclick="sendQuickQuestion('apple是什么意思？')">apple是什么意思？</button>
+              <button class="chat-suggestion-btn" onclick="sendQuickQuestion('怎么说我爱你？')">怎么说我爱你？</button>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <input type="text" class="chat-input" id="chatInput" placeholder="问我任何英语问题..." />
+          <button class="chat-send-btn" id="chatSendBtn" onclick="sendMessage()">📤</button>
+        </div>
+      </div>
     </div>
 
     <!-- 底部导航 -->
@@ -770,6 +950,10 @@
       <button class="nav-btn" id="navVocab" onclick="switchTab('vocab')">
         <span class="nav-icon">🗂️</span>
         <span>词汇表</span>
+      </button>
+      <button class="nav-btn" id="navChat" onclick="switchTab('chat')">
+        <span class="nav-icon">💬</span>
+        <span>问姑姑</span>
       </button>
     </div>
   </div>
@@ -1246,7 +1430,10 @@
           <div class="story-page">
             <div class="page-num">${idx + 1}</div>
             <div class="illustration">🎨 ${page.illustration}</div>
-            <div class="story-text">${processStoryText(page.text, currentDay)}</div>
+            <div class="story-text">
+              <div style="font-weight: 700; color: #333; font-size: 18px; line-height: 2; margin-bottom: 8px;">${page.en}</div>
+              <div style="color: #666; font-size: 15px; line-height: 1.8;">${page.cn}</div>
+            </div>
           </div>
         `;
       });
@@ -1340,7 +1527,6 @@
           <div class="vocab-day-group">
             <div class="vocab-day-header ${isCurrentDay ? 'expanded' : ''}" onclick="toggleVocabDay(${dayData.day})">
               <span>第${dayData.day}天 ${isCurrentDay ? '📌' : ''}</span>
-              <span class="day-tag">Day ${dayData.day}</span>
               <span class="expand-icon">${isCurrentDay ? '▼' : '▶'}</span>
             </div>
             <div class="vocab-words ${isCurrentDay ? 'expanded' : ''}" id="vocabDay${dayData.day}">
@@ -1399,7 +1585,7 @@
     function switchTab(tab) {
       currentTab = tab;
       document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.words-panel, .story-panel, .vocab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.words-panel, .story-panel, .vocab-panel, .chat-panel').forEach(p => p.classList.remove('active'));
       
       const animClass = 'slide-in-right';
       
@@ -1411,15 +1597,169 @@
         document.getElementById('navStory').classList.add('active');
         document.getElementById('storyPanel').classList.add('active');
         document.getElementById('storyPanel').className = 'story-panel active ' + animClass;
-      } else {
+      } else if (tab === 'vocab') {
         document.getElementById('navVocab').classList.add('active');
         document.getElementById('vocabPanel').classList.add('active');
         document.getElementById('vocabPanel').className = 'vocab-panel active ' + animClass;
+      } else if (tab === 'chat') {
+        document.getElementById('navChat').classList.add('active');
+        document.getElementById('chatPanel').classList.add('active');
+        document.getElementById('chatPanel').className = 'chat-panel active ' + animClass;
       }
       
       // 滚动到顶部
       document.getElementById('mainContent').scrollTop = 0;
     }
+
+    // ========== 问姑姑聊天功能 ==========
+    let chatHistory = [];
+    
+    function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const question = input.value.trim();
+      if (!question) return;
+      
+      // 添加用户消息
+      addChatMessage('user', question);
+      input.value = '';
+      
+      // 显示输入中...
+      const typingId = addTypingIndicator();
+      
+      // 模拟AI回答（这里用简单规则，实际可以接入真正的AI API）
+      setTimeout(() => {
+        removeTypingIndicator(typingId);
+        const answer = getAIAnswer(question);
+        addChatMessage('assistant', answer);
+      }, 1000 + Math.random() * 1000);
+    }
+    
+    function sendQuickQuestion(question) {
+      document.getElementById('chatInput').value = question;
+      sendMessage();
+    }
+    
+    function addChatMessage(role, content) {
+      const container = document.getElementById('chatMessages');
+      const welcome = container.querySelector('.chat-welcome');
+      if (welcome) welcome.remove();
+      
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `chat-message ${role}`;
+      
+      const avatar = role === 'user' ? '👧' : '👩‍🏫';
+      msgDiv.innerHTML = `
+        <div class="chat-avatar">${avatar}</div>
+        <div class="chat-bubble">${content}</div>
+      `;
+      
+      container.appendChild(msgDiv);
+      container.scrollTop = container.scrollHeight;
+      
+      chatHistory.push({ role, content });
+    }
+    
+    function addTypingIndicator() {
+      const container = document.getElementById('chatMessages');
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'chat-message assistant';
+      typingDiv.id = 'typing-indicator';
+      typingDiv.innerHTML = `
+        <div class="chat-avatar">👩‍🏫</div>
+        <div class="chat-bubble">
+          <div class="chat-typing">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      `;
+      container.appendChild(typingDiv);
+      container.scrollTop = container.scrollHeight;
+      return 'typing-indicator';
+    }
+    
+    function removeTypingIndicator(id) {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    }
+    
+    function getAIAnswer(question) {
+      const q = question.toLowerCase();
+      
+      // 简单规则匹配（可以替换为真正的AI API）
+      if (q.includes('怎么读') || q.includes('发音')) {
+        const word = extractWord(question);
+        if (word) {
+          const wordData = findWordInData(word);
+          if (wordData) {
+            return `"${wordData.en}" 的发音是 ${wordData.ph}，意思是"${wordData.cn}"。点击学单词页面的🔊按钮可以听发音哦！`;
+          }
+        }
+        return '你想知道哪个单词的发音呢？告诉我单词，我帮你查～';
+      }
+      
+      if (q.includes('什么意思') || q.includes('意思')) {
+        const word = extractWord(question);
+        if (word) {
+          const wordData = findWordInData(word);
+          if (wordData) {
+            return `${wordData.emoji} "${wordData.en}" 的意思是"${wordData.cn}"！\n\n音标是：${wordData.ph}`;
+          }
+        }
+        return '你想知道哪个单词的意思呢？';
+      }
+      
+      if (q.includes('怎么说') || q.includes('英语怎么')) {
+        if (q.includes('我爱你')) {
+          return '💕 "我爱你"用英语说是 "I love you"！\n\nlove 的发音是 /lʌv/，记得要大声说出来哦～';
+        }
+        if (q.includes('你好')) {
+          return '👋 "你好"用英语说是 "Hello" 或者 "Hi"！\n\nHello 更正式，Hi 更随意～';
+        }
+        if (q.includes('谢谢')) {
+          return '🙏 "谢谢"用英语说是 "Thank you"！\n\n可以简单说 "Thanks"～';
+        }
+        return '告诉我你想用英语说什么，我来教你～';
+      }
+      
+      // 默认回答
+      return `这是个好问题！${question}\n\n姑姑建议你：\n1. 先在"学单词"里打卡学习\n2. 在"读绘本"里看看这个词怎么用\n3. 多听多读，慢慢就会啦！\n\n加油哦！💪`;
+    }
+    
+    function extractWord(text) {
+      // 提取英文单词
+      const enMatch = text.match(/\b[a-zA-Z]+\b/);
+      if (enMatch) return enMatch[0].toLowerCase();
+      
+      // 提取中文词
+      const cnMatch = text.match(/[\"\"'']([^\"\"'']+)[\"\"'']/);
+      if (cnMatch) return cnMatch[1];
+      
+      return null;
+    }
+    
+    function findWordInData(word) {
+      for (const dayData of WORDS_DATA) {
+        for (const w of dayData.words) {
+          if (w.en.toLowerCase() === word.toLowerCase() || w.cn === word) {
+            return w;
+          }
+        }
+      }
+      return null;
+    }
+    
+    // 回车发送
+    document.addEventListener('DOMContentLoaded', () => {
+      const chatInput = document.getElementById('chatInput');
+      if (chatInput) {
+        chatInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            sendMessage();
+          }
+        });
+      }
+    });
 
     // ========== Toast ==========
     function showToast(msg) {

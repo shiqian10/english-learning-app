@@ -417,12 +417,12 @@ const STORY_DATA = [
     title: "我的家人",
     titleEn: "My Family",
     pages: [
-      { text: "这是我的 mom，她很温柔。", illustration: "👩 温柔的妈妈" },
-      { text: "这是我的 dad，他很强壮。", illustration: "👨 强壮的爸爸" },
-      { text: "我的 brother 喜欢踢球。", illustration: "👦 哥哥在踢球" },
-      { text: "我的 sister 喜欢唱歌。", illustration: "👧 姐姐在唱歌" },
-      { text: "我们是一个快乐的 family！", illustration: "👨‍👩‍👧‍👦 全家福" },
-      { text: "grandma 给我做好吃的！", illustration: "👵 奶奶在厨房" }
+      { en: "This is my ( ), she is gentle.", cn: "这是我的（妈妈），她很温柔。", illustration: "👩 温柔的妈妈", word: "mom" },
+      { en: "This is my ( ), he is strong.", cn: "这是我的（爸爸），他很强壮。", illustration: "👨 强壮的爸爸", word: "dad" },
+      { en: "My ( ) likes to play football.", cn: "我的（兄弟）喜欢踢球。", illustration: "👦 哥哥在踢球", word: "brother" },
+      { en: "My ( ) likes to sing.", cn: "我的（姐妹）喜欢唱歌。", illustration: "👧 姐姐在唱歌", word: "sister" },
+      { en: "We are a happy ( )!", cn: "我们是一个快乐的（家庭）！", illustration: "👨‍👩‍👧‍👦 全家福", word: "family" },
+      { en: "( ) makes delicious food for me!", cn: "（奶奶/外婆）给我做好吃的！", illustration: "👵 奶奶在厨房", word: "grandma" }
     ]
   },
   {
