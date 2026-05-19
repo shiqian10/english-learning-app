@@ -711,6 +711,69 @@
       color: white;
       border-color: var(--pink);
     }
+    .chat-api-setup {
+      margin-top: 16px;
+      padding: 16px;
+      background: #F0F4FF;
+      border-radius: 12px;
+    }
+    .api-hint {
+      font-size: 14px;
+      color: #333;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .api-input {
+      width: 100%;
+      border: 1.5px solid #D1D5DB;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      margin-bottom: 8px;
+      background: white;
+    }
+    .api-save-btn {
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      touch-action: manipulation;
+    }
+    .api-save-btn:active { transform: scale(0.97); }
+    .api-help {
+      font-size: 12px;
+      color: #666;
+      margin-top: 8px;
+    }
+    .api-help a {
+      color: var(--blue);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .chat-api-active {
+      margin-top: 12px;
+      padding: 12px;
+      background: #ECFDF5;
+      border-radius: 10px;
+    }
+    .api-status {
+      font-size: 14px;
+      color: #059669;
+      font-weight: 600;
+    }
+    .api-clear-btn {
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: underline;
+    }
 
     /* ========== 底部导航 ========== */
     .bottom-nav {
@@ -922,11 +985,20 @@
           <div class="chat-welcome">
             <div class="chat-welcome-icon">👩‍🏫</div>
             <h3>我是英语姑姑</h3>
-            <p>有什么英语问题都可以问我哦！<br>比如单词怎么读、语法怎么用～</p>
+            <p>有什么英语问题都可以问我哦！<br>接入AI后回答更聪明～</p>
+            <div class="chat-api-setup" id="chatApiSetup">
+              <p class="api-hint">🔑 输入Gemini API Key开启AI对话（免费）</p>
+              <input type="text" class="api-input" id="apiKeyInput" placeholder="输入你的Gemini API Key..." />
+              <button class="api-save-btn" onclick="saveApiKey()">保存并启用 ✨</button>
+              <p class="api-help"><a href="https://aistudio.google.com/apikey" target="_blank">免费获取API Key →</a></p>
+            </div>
+            <div class="chat-api-active" id="chatApiActive" style="display:none">
+              <p class="api-status">✅ AI已启用 · <button onclick="clearApiKey()" class="api-clear-btn">切换回离线模式</button></p>
+            </div>
             <div class="chat-suggestions">
               <button class="chat-suggestion-btn" onclick="sendQuickQuestion('mom怎么读？')">mom怎么读？</button>
-              <button class="chat-suggestion-btn" onclick="sendQuickQuestion('apple是什么意思？')">apple是什么意思？</button>
-              <button class="chat-suggestion-btn" onclick="sendQuickQuestion('怎么说我爱你？')">怎么说我爱你？</button>
+              <button class="chat-suggestion-btn" onclick="sendQuickQuestion('苹果用英语怎么说？')">苹果用英语怎么说？</button>
+              <button class="chat-suggestion-btn" onclick="sendQuickQuestion('good和well有什么区别？')">good和well的区别？</button>
             </div>
           </div>
         </div>
@@ -1613,34 +1685,40 @@
 
     // ========== 问姑姑聊天功能 ==========
     let chatHistory = [];
+    let geminiApiKey = '';
     
-    // 常用中文→英语翻译词典
-    const CN_EN_DICT = {
-      '你好': 'Hello / Hi', '谢谢': 'Thank you / Thanks', '对不起': 'Sorry / I\'m sorry',
-      '再见': 'Goodbye / Bye', '请': 'Please', '是': 'Yes', '不': 'No',
-      '我爱你': 'I love you', '早上好': 'Good morning', '晚安': 'Good night',
-      '吃': 'eat', '喝': 'drink', '玩': 'play', '看': 'look / watch',
-      '跑': 'run', '走': 'walk', '坐': 'sit', '站': 'stand',
-      '大': 'big', '小': 'small', '多': 'many / much', '少': 'few / little',
-      '好': 'good', '坏': 'bad', '快': 'fast', '慢': 'slow',
-      '冷': 'cold', '热': 'hot', '新': 'new', '旧': 'old',
-      '长': 'long', '短': 'short', '高': 'tall', '低': 'low',
-      '开心': 'happy', '伤心': 'sad', '害怕': 'scared', '生气': 'angry',
-      '漂亮': 'beautiful', '聪明': 'smart', '强壮': 'strong',
-      '猫': 'cat', '狗': 'dog', '鸟': 'bird', '鱼': 'fish',
-      '兔子': 'rabbit', '猪': 'pig', '牛': 'cow', '马': 'horse',
-      '妈妈': 'mom / mother', '爸爸': 'dad / father', '兄弟': 'brother', '姐妹': 'sister',
-      '家庭': 'family', '朋友': 'friend', '老师': 'teacher', '宝宝': 'baby',
-      '苹果': 'apple', '香蕉': 'banana', '牛奶': 'milk', '蛋糕': 'cake',
-      '鸡蛋': 'egg', '面包': 'bread', '米饭': 'rice', '水': 'water',
-      '红色': 'red', '蓝色': 'blue', '绿色': 'green', '黄色': 'yellow',
-      '白色': 'white', '黑色': 'black',
-      '一': 'one', '二': 'two', '三': 'three', '四': 'four', '五': 'five',
-      '六': 'six', '七': 'seven', '八': 'eight', '九': 'nine', '十': 'ten',
-      '太阳': 'sun', '月亮': 'moon', '星星': 'star', '树': 'tree', '花': 'flower',
-      '书': 'book', '笔': 'pen', '书包': 'bag', '学校': 'school',
-      '汽车': 'car', '飞机': 'plane', '火车': 'train', '船': 'boat',
-    };
+    // 页面加载时检查API Key
+    (function() {
+      geminiApiKey = localStorage.getItem('gemini_api_key') || '';
+      if (geminiApiKey) {
+        const setup = document.getElementById('chatApiSetup');
+        const active = document.getElementById('chatApiActive');
+        if (setup) setup.style.display = 'none';
+        if (active) active.style.display = 'block';
+      }
+    })();
+    
+    function saveApiKey() {
+      const input = document.getElementById('apiKeyInput');
+      const key = input.value.trim();
+      if (!key) {
+        showToast('请输入API Key');
+        return;
+      }
+      geminiApiKey = key;
+      localStorage.setItem('gemini_api_key', key);
+      document.getElementById('chatApiSetup').style.display = 'none';
+      document.getElementById('chatApiActive').style.display = 'block';
+      showToast('AI已启用！现在可以像豆包一样对话了 ✨');
+    }
+    
+    function clearApiKey() {
+      geminiApiKey = '';
+      localStorage.removeItem('gemini_api_key');
+      document.getElementById('chatApiSetup').style.display = 'block';
+      document.getElementById('chatApiActive').style.display = 'none';
+      showToast('已切换回离线模式');
+    }
     
     function sendMessage() {
       const input = document.getElementById('chatInput');
@@ -1652,11 +1730,76 @@
       
       const typingId = addTypingIndicator();
       
-      setTimeout(() => {
+      // 有API Key → 用Gemini AI回答
+      if (geminiApiKey) {
+        callGeminiAI(question, typingId);
+      } else {
+        // 无API Key → 用规则回答
+        setTimeout(() => {
+          removeTypingIndicator(typingId);
+          const answer = getAIAnswer(question);
+          addChatMessage('assistant', answer);
+        }, 600 + Math.random() * 800);
+      }
+    }
+    
+    // Gemini AI API调用
+    async function callGeminiAI(question, typingId) {
+      try {
+        // 构造学习上下文
+        const dayData = WORDS_DATA.find(d => d.day === currentDay);
+        const todayWords = dayData ? dayData.words.map(w => `${w.en}(${w.cn})`).join(', ') : '';
+        
+        const systemPrompt = `你是一个温柔的英语老师，叫"英语姑姑"，专门教小朋友学英语。
+当前是第${currentDay}天，今天学的单词是：${todayWords}。
+回答要求：
+1. 用温柔鼓励的语气，像跟小朋友说话
+2. 适当用emoji让回答更活泼
+3. 如果涉及单词，给出音标和中文意思
+4. 用简单易懂的语言解释
+5. 可以给小例句帮助理解
+6. 回答尽量简洁（3-5句话）`;
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [
+                { role: 'user', parts: [{ text: systemPrompt }] },
+                { role: 'model', parts: [{ text: '好的，我会用温柔的方式教小朋友英语！' }] },
+                { role: 'user', parts: [{ text: question }] }
+              ],
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 300
+              }
+            })
+          }
+        );
+        
+        const data = await response.json();
         removeTypingIndicator(typingId);
-        const answer = getAIAnswer(question);
-        addChatMessage('assistant', answer);
-      }, 600 + Math.random() * 800);
+        
+        if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+          let answer = data.candidates[0].content.parts[0].text;
+          // 清理Markdown格式
+          answer = answer.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          answer = answer.replace(/\*(.*?)\*/g, '$1');
+          answer = answer.replace(/^#+ .*/gm, '');
+          addChatMessage('assistant', answer);
+        } else {
+          addChatMessage('assistant', '抱歉，我暂时无法回答 😅\n请检查API Key是否正确，或稍后再试～');
+        }
+      } catch (e) {
+        removeTypingIndicator(typingId);
+        if (e.message.includes('401') || e.message.includes('403')) {
+          addChatMessage('assistant', 'API Key好像不对哦 🔑\n请检查Key是否正确，或者<a href="https://aistudio.google.com/apikey" target="_blank">重新获取</a>');
+        } else {
+          addChatMessage('assistant', '网络出了点问题 😅\n试试以下方式：\n📌 切换回离线模式继续使用\n📌 检查网络连接');
+        }
+      }
     }
     
     function sendQuickQuestion(question) {
@@ -1673,7 +1816,6 @@
       msgDiv.className = `chat-message ${role}`;
       
       const avatar = role === 'user' ? '👧' : '👩‍🏫';
-      // 支持换行
       const formatted = content.replace(/\n/g, '<br>');
       msgDiv.innerHTML = `
         <div class="chat-avatar">${avatar}</div>
@@ -1709,10 +1851,30 @@
       if (el) el.remove();
     }
     
+    // 离线模式：规则匹配回答
+    const CN_EN_DICT = {
+      '你好': 'Hello / Hi', '谢谢': 'Thank you', '对不起': 'Sorry',
+      '再见': 'Goodbye', '请': 'Please', '是': 'Yes', '不': 'No',
+      '我爱你': 'I love you', '早上好': 'Good morning', '晚安': 'Good night',
+      '吃': 'eat', '喝': 'drink', '玩': 'play', '看': 'look',
+      '跑': 'run', '走': 'walk', '坐': 'sit', '站': 'stand',
+      '大': 'big', '小': 'small', '多': 'many', '少': 'few',
+      '好': 'good', '坏': 'bad', '快': 'fast', '慢': 'slow',
+      '冷': 'cold', '热': 'hot', '新': 'new', '旧': 'old',
+      '长': 'long', '短': 'short', '高': 'tall', '低': 'low',
+      '开心': 'happy', '伤心': 'sad', '害怕': 'scared', '生气': 'angry',
+      '漂亮': 'beautiful', '聪明': 'smart', '猫': 'cat', '狗': 'dog',
+      '妈妈': 'mom', '爸爸': 'dad', '兄弟': 'brother', '姐妹': 'sister',
+      '家庭': 'family', '朋友': 'friend', '老师': 'teacher', '宝宝': 'baby',
+      '苹果': 'apple', '香蕉': 'banana', '牛奶': 'milk', '蛋糕': 'cake',
+      '鸡蛋': 'egg', '面包': 'bread', '米饭': 'rice', '水': 'water',
+      '红色': 'red', '蓝色': 'blue', '绿色': 'green', '黄色': 'yellow',
+    };
+
     function getAIAnswer(question) {
       const q = question.toLowerCase().trim();
       
-      // 1. 直接输入英文单词 → 返回完整信息
+      // 1. 直接输入英文单词
       const enWords = q.match(/\b[a-zA-Z]+(?:\s[a-zA-Z]+)?\b/g);
       if (enWords && enWords.length === 1 && q.length <= 30) {
         const wordData = findWordInData(enWords[0]);
@@ -1720,11 +1882,10 @@
           const dayInfo = findDayForWord(wordData.en);
           return `${wordData.emoji} <strong>${wordData.en}</strong>\n音标：${wordData.ph}\n中文：${wordData.cn}\n第${dayInfo}天学习内容\n点击🔊可以听发音！`;
         }
-        // 不在词库中的英文单词
-        return `我还没学到 "${enWords[0]}" 这个词呢！\n不过你可以点击🔊按钮听发音。\n我们词库有270个常用词，也许后面会学到它！`;
+        return `我还没学到 "${enWords[0]}" 这个词呢！\n输入Gemini API Key后，我可以回答任何问题哦～`;
       }
       
-      // 2. 直接输入中文 → 翻译成英文
+      // 2. 直接输入中文 → 翻译
       const cnKey = question.replace(/[？?！!。.，,吗呢吧啊呀]/g, '').trim();
       if (CN_EN_DICT[cnKey]) {
         const en = CN_EN_DICT[cnKey];
@@ -1735,133 +1896,58 @@
         return `"${cnKey}" 用英语说是 <strong>${en}</strong>\n多多练习，慢慢就会记住啦！`;
       }
       
-      // 3. 怎么读/发音
-      if (q.includes('怎么读') || q.includes('发音') || q.includes('读音') || q.includes('念')) {
+      // 3-7. 各种问题类型（简化）
+      if (q.includes('怎么读') || q.includes('发音') || q.includes('读音')) {
         const word = extractWord(question);
-        if (word) {
-          const wordData = findWordInData(word);
-          if (wordData) {
-            return `${wordData.emoji} <strong>${wordData.en}</strong> 的发音是 ${wordData.ph}\n中文意思是"${wordData.cn}"\n点击学单词页面的🔊按钮可以听发音！`;
-          }
-          return `我暂时没有 "${word}" 的信息。\n你可以点击🔊按钮听系统发音哦～`;
-        }
-        return '告诉我你想知道哪个单词的发音？\n比如输入 "mom怎么读" 或者直接输入单词～';
+        if (word) { const wd = findWordInData(word); if (wd) return `${wd.emoji} <strong>${wd.en}</strong> ${wd.ph}\n意思是"${wd.cn}"，点击🔊听发音！`; }
+        return '告诉我你想知道哪个单词的发音？\n💡 输入API Key后可以问任何问题！';
       }
-      
-      // 4. 什么意思/意思
-      if (q.includes('什么意思') || q.includes('啥意思') || q.includes('意思是') || q.includes('含义')) {
+      if (q.includes('什么意思') || q.includes('啥意思')) {
         const word = extractWord(question);
-        if (word) {
-          const wordData = findWordInData(word);
-          if (wordData) {
-            return `${wordData.emoji} <strong>${wordData.en}</strong> 的意思是"${wordData.cn}"\n音标：${wordData.ph}\n多读绘本，你会更熟悉它！`;
-          }
-          return `我还没学到 "${word}" 这个词。\n我们的词库有270个常用词，继续学习吧！`;
-        }
-        return '告诉我你想知道哪个单词的意思？\n比如 "apple是什么意思"～';
+        if (word) { const wd = findWordInData(word); if (wd) return `${wd.emoji} <strong>${wd.en}</strong> = "${wd.cn}"\n音标：${wd.ph}`; }
+        return '告诉我你想知道哪个单词的意思？\n💡 输入API Key后可以问任何问题！';
       }
-      
-      // 5. 怎么说/英语怎么/翻译
-      if (q.includes('怎么说') || q.includes('英语怎么') || q.includes('英语是') || q.includes('翻译') || q.includes('用英语')) {
-        // 先检查词典
+      if (q.includes('怎么说') || q.includes('英语怎么') || q.includes('用英语')) {
         for (const [cn, en] of Object.entries(CN_EN_DICT)) {
           if (question.includes(cn)) {
-            const wordData = findWordInData(cn);
-            if (wordData) {
-              return `${wordData.emoji} "${cn}" 用英语说是 <strong>${wordData.en}</strong>\n音标：${wordData.ph}\n记得多练习哦！`;
-            }
-            return `"${cn}" 用英语说是 <strong>${en}</strong>\n多多练习，慢慢就会记住啦！💪`;
+            const wd = findWordInData(cn);
+            if (wd) return `${wd.emoji} "${cn}" = <strong>${wd.en}</strong> ${wd.ph}`;
+            return `"${cn}" = <strong>${en}</strong> 💪`;
           }
         }
-        // 检查词库中的中文
-        const allWords = WORDS_DATA.flatMap(d => d.words);
-        for (const w of allWords) {
-          if (question.includes(w.cn)) {
-            return `${w.emoji} "${w.cn}" 用英语说是 <strong>${w.en}</strong>\n音标：${w.ph}\n第${findDayForWord(w.en)}天会学到这个词！`;
-          }
-        }
-        return '告诉我你想用英语说什么，我来帮你翻译！\n比如 "妈妈用英语怎么说"～';
+        const allW = WORDS_DATA.flatMap(d => d.words);
+        for (const w of allW) { if (question.includes(w.cn)) return `${w.emoji} "${w.cn}" = <strong>${w.en}</strong> ${w.ph}`; }
+        return '告诉我你想翻译什么？\n💡 输入API Key后可以翻译任何内容！';
       }
+      if (q.includes('你好') || q === 'hi' || q === 'hello') return '👋 你好！有什么英语问题问我？\n💡 输入API Key后可以像豆包一样对话！';
+      if (q.includes('你是谁')) return '👩‍🏫 我是英语姑姑！教你学英语的～\n💡 输入API Key后我会变得更聪明！';
       
-      // 6. 造句/例句/怎么用
-      if (q.includes('造句') || q.includes('例句') || q.includes('怎么用') || q.includes('用法')) {
-        const word = extractWord(question);
-        if (word) {
-          const wordData = findWordInData(word);
-          if (wordData) {
-            return `这里有一个 <strong>${wordData.en}</strong> (${wordData.cn}) 的例句：\n"I ${wordData.en} every day." (我每天${wordData.cn})\n多读绘本中的句子，你会学到更多用法！`;
-          }
-        }
-        return '告诉我你想用哪个单词造句？\n比如 "apple怎么造句"～';
-      }
+      // 包含中文词
+      const allW = WORDS_DATA.flatMap(d => d.words);
+      for (const w of allW) { if (question.includes(w.cn)) return `${w.emoji} "${w.cn}" = <strong>${w.en}</strong> ${w.ph}`; }
+      for (const [cn, en] of Object.entries(CN_EN_DICT)) { if (question.includes(cn)) return `"${cn}" = <strong>${en}</strong>`; }
       
-      // 7. 区别/对比
-      if (q.includes('区别') || q.includes('对比') || q.includes('不一样') || q.includes('有什么不同')) {
-        if (q.includes('good') && q.includes('well')) return '<strong>good</strong> 是形容词（好的），<strong>well</strong> 是副词（好地）。\n例：He is a good boy. / He plays well.';
-        if (q.includes('big') && q.includes('large')) return '<strong>big</strong> 和 <strong>large</strong> 都表示"大"，big更口语化，large更正式。';
-        if (q.includes('see') && q.includes('look')) return '<strong>see</strong> = 看到了（结果），<strong>look</strong> = 去看（动作）。\n例：I see a bird! / Look at the bird!';
-        if (q.includes('listen') && q.includes('hear')) return '<strong>listen</strong> = 去听（动作），<strong>hear</strong> = 听到了（结果）。\n例：Listen to me! / I hear the music.';
-        return '告诉我你想比较哪两个词？\n比如 "good和well的区别"～';
-      }
-      
-      // 8. 打招呼/闲聊
-      if (q.includes('你好') || q.includes('嗨') || q.includes('hi') || q === 'hello') return '👋 你好呀！有什么英语问题想问我吗？\n可以问我单词发音、意思、翻译哦～';
-      if (q.includes('谢谢') || q.includes('thanks') || q === 'thank you') return '😊 不客气！有问题随时来问我哦～';
-      if (q.includes('你是谁') || q.includes('你叫什么')) return '👩‍🏫 我是英语姑姑！专门帮你学英语的～\n可以问我单词怎么读、怎么翻译、有什么意思！';
-      if (q.includes('你好笨') || q.includes('好傻') || q.includes('好蠢')) return '😅 姑姑还在学习变得更聪明呢！\n试试直接输入一个单词或中文，我会给你详细答案哦～';
-      
-      // 9. 包含词库中文词 → 自动翻译
-      const allWords = WORDS_DATA.flatMap(d => d.words);
-      for (const w of allWords) {
-        if (question.includes(w.cn) && question.includes(w.cn) && !q.includes('什么意思') && !q.includes('怎么说') && !q.includes('怎么读')) {
-          return `${w.emoji} 你是在说 <strong>${w.cn}</strong> 吗？\n英语是 <strong>${w.en}</strong>\n音标：${w.ph}\n有什么想了解的，可以继续问我！`;
-        }
-      }
-      
-      // 10. 默认 - 尝试翻译成英语
-      for (const [cn, en] of Object.entries(CN_EN_DICT)) {
-        if (question.includes(cn)) {
-          return `"${cn}" 的英语是 <strong>${en}</strong>\n继续问我更多问题吧！😊`;
-        }
-      }
-      
-      // 11. 最终兜底
-      return `我暂时不太理解这个问题 😅\n\n但我可以帮你：\n📌 输入单词查发音和意思\n📌 输入中文查英语翻译\n📌 问"XX怎么说/怎么读/什么意思"\n\n试试问我具体的问题吧！`;
+      return `我暂时不太理解 😅\n\n💡 <strong>输入Gemini API Key后</strong>，我可以像豆包一样回答任何问题！\n\n免费获取Key：点击上方链接 →\n\n现在我可以帮你：\n📌 输入单词查发音和意思\n📌 输入中文查英语翻译`;
     }
     
     function extractWord(text) {
-      // 提取英文单词
       const enMatch = text.match(/\b([a-zA-Z]+(?:\s[a-zA-Z]+)?)\b/);
       if (enMatch) return enMatch[1].toLowerCase();
-      
-      // 提取引号内的内容
       const quoteMatch = text.match(/[\"\"'']([^\"\"'']+)[\"\"'']/);
       if (quoteMatch) return quoteMatch[1];
-      
-      // 提取中文
       const cnWords = WORDS_DATA.flatMap(d => d.words);
-      for (const w of cnWords) {
-        if (text.includes(w.cn)) return w.cn;
-      }
-      
+      for (const w of cnWords) { if (text.includes(w.cn)) return w.cn; }
       return null;
     }
     
     function findWordInData(word) {
       const allWords = WORDS_DATA.flatMap(d => d.words);
-      return allWords.find(w => 
-        w.en.toLowerCase() === word.toLowerCase() || 
-        w.cn === word ||
-        w.cn.includes(word) ||
-        word.includes(w.cn)
-      ) || null;
+      return allWords.find(w => w.en.toLowerCase() === word.toLowerCase() || w.cn === word || w.cn.includes(word)) || null;
     }
     
     function findDayForWord(wordEn) {
       for (const dayData of WORDS_DATA) {
-        if (dayData.words.find(w => w.en.toLowerCase() === wordEn.toLowerCase())) {
-          return dayData.day;
-        }
+        if (dayData.words.find(w => w.en.toLowerCase() === wordEn.toLowerCase())) return dayData.day;
       }
       return '?';
     }
