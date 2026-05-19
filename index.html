@@ -824,38 +824,83 @@
     }
 
     // ========== 朗读功能 ==========
-    function speakWord(word) {
+    let audioReady = false;
+    let cachedVoices = [];
+    
+    // 初始化语音（需要在页面加载后调用）
+    function initAudio() {
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        
-        // 尝试找到英语语音
-        const voices = window.speechSynthesis.getVoices();
-        const enVoice = voices.find(v => v.lang.includes('en') && !v.lang.includes('GB')) 
-                    || voices.find(v => v.lang.startsWith('en'));
-        
-        const u = new SpeechSynthesisUtterance(word);
-        u.lang = 'en-US';
-        u.rate = 0.65; // 放慢语速，更清晰
-        u.pitch = 1.15; // 稍微提高音调，更活泼
-        u.volume = 1;
-        
-        if (enVoice) {
-          u.voice = enVoice;
+        // iOS Safari 需要先获取 voices
+        const loadVoices = () => {
+          cachedVoices = window.speechSynthesis.getVoices();
+        };
+        loadVoices();
+        // 有些浏览器需要延迟加载
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+          window.speechSynthesis.onvoiceschanged = loadVoices;
         }
-        
-        window.speechSynthesis.speak(u);
-        
-        // 朗读完中文意思
-        const dayData = WORDS_DATA.find(d => d.day === currentDay);
-        const wordObj = dayData?.words.find(w => w.en.toLowerCase() === word.toLowerCase());
-        if (wordObj) {
-          setTimeout(() => {
-            const cnUtt = new SpeechSynthesisUtterance(wordObj.cn);
-            cnUtt.lang = 'zh-CN';
-            cnUtt.rate = 0.8;
-            window.speechSynthesis.speak(cnUtt);
-          }, Math.max(800, word.length * 150));
-        }
+        audioReady = true;
+      }
+    }
+    
+    // 页面加载后初始化音频
+    document.addEventListener('DOMContentLoaded', initAudio);
+    
+    function speakWord(word, btnElement) {
+      if (!('speechSynthesis' in window)) {
+        showToast('您的浏览器不支持语音播放');
+        return;
+      }
+      
+      // 按钮动画反馈
+      if (btnElement) {
+        btnElement.style.transform = 'scale(1.15)';
+        btnElement.style.background = 'var(--blue)';
+        btnElement.style.color = 'white';
+        setTimeout(() => {
+          btnElement.style.transform = '';
+          btnElement.style.background = '';
+          btnElement.style.color = '';
+        }, 800);
+      }
+      
+      window.speechSynthesis.cancel();
+      
+      // 查找最佳英语语音
+      let enVoice = cachedVoices.find(v => v.lang.includes('en-US') && v.name.includes('Samantha'))
+                   || cachedVoices.find(v => v.lang.includes('en-US'))
+                   || cachedVoices.find(v => v.lang.startsWith('en') && !v.lang.includes('GB'))
+                   || cachedVoices.find(v => v.lang.startsWith('en'));
+      
+      const u = new SpeechSynthesisUtterance(word);
+      u.lang = 'en-US';
+      u.rate = 0.7;
+      u.pitch = 1.0;
+      u.volume = 1;
+      
+      if (enVoice) {
+        u.voice = enVoice;
+      }
+      
+      window.speechSynthesis.speak(u);
+      
+      const dayData = WORDS_DATA.find(d => d.day === currentDay);
+      const wordObj = dayData?.words.find(w => w.en.toLowerCase() === word.toLowerCase());
+      if (wordObj) {
+        const delay = Math.max(600, word.length * 120);
+        setTimeout(() => {
+          window.speechSynthesis.cancel();
+          const cnUtt = new SpeechSynthesisUtterance(wordObj.cn);
+          cnUtt.lang = 'zh-CN';
+          cnUtt.rate = 0.85;
+          cnUtt.pitch = 1.0;
+          
+          let cnVoice = cachedVoices.find(v => v.lang.includes('zh-CN'))
+                       || cachedVoices.find(v => v.lang.startsWith('zh'));
+          if (cnVoice) cnUtt.voice = cnVoice;
+          
+          window.speechSynthesis.speak(cnUtt);
+        }, delay);
       }
     }
 
@@ -1167,11 +1212,11 @@
         
         let actionBtns;
         if (completedDays[currentDay]) {
-          actionBtns = `<button class="speak-btn" onclick="speakWord('${word.en}')" title="播放发音">🔊</button><span class="learned-badge">✓ 已学</span>`;
+          actionBtns = `<button class="speak-btn" onclick="speakWord('${word.en}', this)" title="播放发音">🔊</button><span class="learned-badge">✓ 已学</span>`;
         } else if (isRevealed) {
-          actionBtns = `<button class="speak-btn" onclick="speakWord('${word.en}')" title="播放发音">🔊</button><span class="learned-badge">✓ 想到了</span>`;
+          actionBtns = `<button class="speak-btn" onclick="speakWord('${word.en}', this)" title="播放发音">🔊</button><span class="learned-badge">✓ 想到了</span>`;
         } else {
-          actionBtns = `<button class="speak-btn" onclick="speakWord('${word.en}')" title="播放发音">🔊</button><button class="reveal-btn" onclick="revealWord(${idx})">想一想 💭</button>`;
+          actionBtns = `<button class="speak-btn" onclick="speakWord('${word.en}', this)" title="播放发音">🔊</button><button class="reveal-btn" onclick="revealWord(${idx})">想一想 💭</button>`;
         }
 
         card.innerHTML = `
